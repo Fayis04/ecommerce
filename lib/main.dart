@@ -96,7 +96,7 @@ body: Container(
 
               /// APP TITLE
               const Text(
-                "MultiStore",
+                "vendura",
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
