@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'shop_data.dart';
+import 'product_model.dart';
 
 class AddProduct extends StatefulWidget {
   const AddProduct({super.key});
@@ -12,6 +14,12 @@ class AddProduct extends StatefulWidget {
 class _AddProductState extends State<AddProduct> {
   File? _image;
   final ImagePicker _picker = ImagePicker();
+
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController priceController = TextEditingController();
+  final TextEditingController quantityController = TextEditingController();
+  final TextEditingController detailsController = TextEditingController();
+  final TextEditingController categoryController = TextEditingController();
 
   Future<void> _pickImage() async {
     final XFile? picked =
@@ -28,17 +36,16 @@ class _AddProductState extends State<AddProduct> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F4F4),
-
       body: SingleChildScrollView(
         child: Column(
           children: [
 
-            // ===== TOP HEADER (NO IMAGE) =====
+            // ===== HEADER =====
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(20, 60, 20, 30),
               decoration: const BoxDecoration(
-                color: Color(0xFF8B0000), // Royal Red
+                color: Color(0xFF8B0000),
                 borderRadius: BorderRadius.only(
                   bottomLeft: Radius.circular(40),
                 ),
@@ -55,7 +62,7 @@ class _AddProductState extends State<AddProduct> {
 
             const SizedBox(height: 30),
 
-            // ===== IMAGE PICKER AREA =====
+            // ===== IMAGE =====
             GestureDetector(
               onTap: _pickImage,
               child: Container(
@@ -90,91 +97,29 @@ class _AddProductState extends State<AddProduct> {
             const SizedBox(height: 30),
 
             // ===== PRODUCT NAME =====
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: TextField(
-                decoration: InputDecoration(
-                  labelText: "Product Name",
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(15),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-            ),
+            buildField("Product Name", nameController),
 
             const SizedBox(height: 20),
 
             // ===== PRICE =====
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: TextField(
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: "Price",
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(15),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-            ),
+            buildField("Price", priceController,
+                type: TextInputType.number),
+
             const SizedBox(height: 20),
 
-             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: TextField(
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: "quantity",
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(15),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-            ),
+            // ===== QUANTITY =====
+            buildField("Quantity", quantityController,
+                type: TextInputType.number),
+
             const SizedBox(height: 20),
 
-             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: TextField(
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: "Product details",
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(15),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-            ),
-                        const SizedBox(height: 20),
+            // ===== DETAILS =====
+            buildField("Product Details", detailsController),
 
-            // ===== PRICE =====
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: TextField(
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: "category",
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(15),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-            ),
+            const SizedBox(height: 20),
+
+            // ===== CATEGORY =====
+            buildField("Category", categoryController),
 
             const SizedBox(height: 30),
 
@@ -189,7 +134,35 @@ class _AddProductState extends State<AddProduct> {
                     borderRadius: BorderRadius.circular(15),
                   ),
                 ),
-                onPressed: () {},
+                onPressed: () {
+
+                  if (nameController.text.isEmpty ||
+                      priceController.text.isEmpty ||
+                      categoryController.text.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text("Please fill required fields")),
+                    );
+                    return;
+                  }
+
+                  productList.add(
+                    Product(
+                      name: nameController.text,
+                      category: categoryController.text,
+                      price: double.parse(priceController.text),
+                      inStock: quantityController.text == "0"
+                          ? false
+                          : true,
+                    ),
+                  );
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Product Added")),
+                  );
+
+                  Navigator.pop(context);
+                },
                 child: const Text(
                   "Add Product",
                   style: TextStyle(fontSize: 16),
@@ -199,6 +172,26 @@ class _AddProductState extends State<AddProduct> {
 
             const SizedBox(height: 40),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget buildField(String label, TextEditingController controller,
+      {TextInputType type = TextInputType.text}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: TextField(
+        controller: controller,
+        keyboardType: type,
+        decoration: InputDecoration(
+          labelText: label,
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(15),
+            borderSide: BorderSide.none,
+          ),
         ),
       ),
     );

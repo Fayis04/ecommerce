@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'shop_details.dart';
+import 'shop_view.dart';   // 👈 import this instead
 import 'shop_list.dart';
 
 class CustomerDashboard extends StatelessWidget {
@@ -41,9 +41,9 @@ class CustomerDashboard extends StatelessWidget {
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                children: const [
 
-                  const Text(
+                  Text(
                     "Vendura",
                     style: TextStyle(
                       fontSize: 30,
@@ -53,53 +53,9 @@ class CustomerDashboard extends StatelessWidget {
                     ),
                   ),
 
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
 
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 15),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: const TextField(
-                      decoration: InputDecoration(
-                        hintText: "Search products or shops...",
-                        border: InputBorder.none,
-                        icon: Icon(Icons.search),
-                      ),
-                    ),
-                  ),
                 ],
-              ),
-            ),
-
-            const SizedBox(height: 30),
-
-            // ================= Browse Shops Button =================
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1B5E20),
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                ),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ShopListScreen(),
-                    ),
-                  );
-                },
-                child: const Center(
-                  child: Text(
-                    "Browse All Shops",
-                    style: TextStyle(fontSize: 16),
-                  ),
-                ),
               ),
             ),
 
@@ -116,12 +72,12 @@ class CustomerDashboard extends StatelessWidget {
 
             const SizedBox(height: 15),
 
-            shopCard("Royal Saree","Royal_Saree_id", "assets/saree.jpeg", context),
-            shopCard("Jutti Store","Jutti_Store_id", "assets/jutti.jpeg", context),
-            shopCard("Bangles World","Bangles_World_id", "assets/bangles.jpeg", context),
-            shopCard("Sherwani Hub","Sherwani_Hub_id","assets/sherwani.jpeg", context),
-            shopCard("Book Store","Book_Store_id","assets/books.jpeg", context),
-            shopCard("Custom Gift Zone","Custom_Gift_Zone_id", "assets/customizable_gifts.jpeg", context),
+            shopCard("Royal Saree", "assets/saree.jpeg", context),
+            shopCard("Jutti Store", "assets/jutti.jpeg", context),
+            shopCard("Bangles World", "assets/bangles.jpeg", context),
+            shopCard("Sherwani Hub", "assets/sherwani.jpeg", context),
+            shopCard("Book Store", "assets/books.jpeg", context),
+            shopCard("Custom Gift Zone", "assets/customizable_gifts.jpeg", context),
 
             const SizedBox(height: 40),
           ],
@@ -131,18 +87,16 @@ class CustomerDashboard extends StatelessWidget {
   }
 
   // ================= SHOP CARD =================
-Widget shopCard(String name, String shopId, String imagePath, BuildContext context)
- {
+  Widget shopCard(String name, String imagePath, BuildContext context) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-           builder: (context) => ShopDetails(
-  shopName: name,
-  shopId: name, // temporary fix
-),
-
+            builder: (context) => ShopView(
+              shopName: name,
+              logo: imagePath,
+            ),
           ),
         );
       },

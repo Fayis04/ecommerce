@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'add_product.dart';
+import 'add_product.dart'; // Make sure path is correct
 import 'create_shop.dart';
+import 'seller_shop_view.dart';
 
-class SellerDashboard extends StatelessWidget {
-  const SellerDashboard({super.key});
+class SellerHome extends StatelessWidget {
+  const SellerHome({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -15,7 +16,7 @@ class SellerDashboard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
 
-            // ================= TOP BANNER =================
+            // ================= FULL TOP BANNER =================
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(20, 70, 20, 40),
@@ -63,34 +64,6 @@ class SellerDashboard extends StatelessWidget {
 
             const SizedBox(height: 25),
 
-            // ================= CREATE SHOP BUTTON =================
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1B5E20),
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                ),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const CreateShopScreen(),
-                    ),
-                  );
-                },
-                child: const Text(
-                  "Create Shop",
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 25),
-
             // ================= STATS =================
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -112,7 +85,60 @@ class SellerDashboard extends StatelessWidget {
 
             const SizedBox(height: 30),
 
-            // ================= ACTION BUTTONS =================
+            // ================= ACTIONS =================
+              Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD4AF37),
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SellerShopView(),
+                    ),
+                  );
+                },
+                child: const Text(
+                  "my shop",
+                  style: TextStyle(color: Colors.black),
+                ),
+              ),
+            ),
+           
+             const SizedBox(height: 15),
+
+             Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD4AF37),
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const CreateShopScreen(),
+                    ),
+                  );
+                },
+                child: const Text(
+                  "create my shop",
+                  style: TextStyle(color: Colors.black),
+                ),
+              ),
+            ),
+             const SizedBox(height:15),
+
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: ElevatedButton(
@@ -150,9 +176,7 @@ class SellerDashboard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(15),
                   ),
                 ),
-                onPressed: () {
-                  // You can navigate to manage products screen later
-                },
+                onPressed: () {},
                 child: const Text(
                   "Manage Products",
                   style: TextStyle(color: Colors.white),
@@ -162,7 +186,6 @@ class SellerDashboard extends StatelessWidget {
 
             const SizedBox(height: 30),
 
-            // ================= RECENT ORDERS =================
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 20),
               child: Text(
@@ -186,8 +209,7 @@ class SellerDashboard extends StatelessWidget {
     );
   }
 
-  // ================= STAT CARD =================
-  static Widget statCard(String title, String value, IconData icon) {
+  Widget statCard(String title, String value, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
@@ -221,8 +243,7 @@ class SellerDashboard extends StatelessWidget {
     );
   }
 
-  // ================= ORDER CARD =================
-  static Widget orderCard(String orderNo, String details) {
+  Widget orderCard(String orderNo, String details) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       padding: const EdgeInsets.all(15),
