@@ -64,7 +64,7 @@ class _SellerShopViewState extends State<SellerShopView> {
                       },
                     ),
                   );
-                }).toList(),
+                }),
               ],
             );
           }).toList(),

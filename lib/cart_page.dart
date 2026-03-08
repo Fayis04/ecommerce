@@ -14,7 +14,7 @@ class _CartPageState extends State<CartPage> {
   double getTotal() {
     double total = 0;
     for (var item in cartList) {
-      total += item.price;
+      total += item.price * item.quantity;
     }
     return total;
   }
@@ -31,17 +31,46 @@ class _CartPageState extends State<CartPage> {
               itemCount: cartList.length,
               itemBuilder: (context, index) {
 
+                var product = cartList[index];
+
                 return ListTile(
-                  title: Text(cartList[index].name),
-                  subtitle: Text(
-                      "₹ ${cartList[index].price}"),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete),
-                    onPressed: () {
-                      setState(() {
-                        cartList.removeAt(index);
-                      });
-                    },
+                  title: Text(product.name),
+                  subtitle: Text("₹ ${product.price}"),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+
+                      IconButton(
+                        icon: const Icon(Icons.remove),
+                        onPressed: () {
+                          setState(() {
+                            if (product.quantity > 1) {
+                              product.quantity--;
+                            }
+                          });
+                        },
+                      ),
+
+                      Text(product.quantity.toString()),
+
+                      IconButton(
+                        icon: const Icon(Icons.add),
+                        onPressed: () {
+                          setState(() {
+                            product.quantity++;
+                          });
+                        },
+                      ),
+
+                      IconButton(
+                        icon: const Icon(Icons.delete),
+                        onPressed: () {
+                          setState(() {
+                            cartList.removeAt(index);
+                          });
+                        },
+                      ),
+                    ],
                   ),
                 );
               },
@@ -57,8 +86,7 @@ class _CartPageState extends State<CartPage> {
                   "Total: ₹ ${getTotal()}",
                   style: const TextStyle(
                       fontSize: 18,
-                      fontWeight:
-                          FontWeight.bold),
+                      fontWeight: FontWeight.bold),
                 ),
 
                 const SizedBox(height: 10),
@@ -69,12 +97,11 @@ class _CartPageState extends State<CartPage> {
                       context,
                       MaterialPageRoute(
                         builder: (_) =>
-                            const PaymentPage(),
+                            PaymentPage(total: getTotal()),
                       ),
                     );
                   },
-                  child:
-                      const Text("Proceed to Payment"),
+                  child: const Text("Proceed to Payment"),
                 )
               ],
             ),

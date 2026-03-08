@@ -60,7 +60,7 @@ class ProductDetails extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (_) =>
-                        const PaymentPage(),
+                       PaymentPage(total: product.price),
                   ),
                 );
               },

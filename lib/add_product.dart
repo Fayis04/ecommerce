@@ -20,7 +20,7 @@ class _AddProductState extends State<AddProduct> {
   final TextEditingController quantityController = TextEditingController();
   final TextEditingController detailsController = TextEditingController();
   final TextEditingController categoryController = TextEditingController();
-
+  
   Future<void> _pickImage() async {
     final XFile? picked =
         await _picker.pickImage(source: ImageSource.gallery);
@@ -146,16 +146,20 @@ class _AddProductState extends State<AddProduct> {
                     return;
                   }
 
-                  productList.add(
-                    Product(
-                      name: nameController.text,
-                      category: categoryController.text,
-                      price: double.parse(priceController.text),
-                      inStock: quantityController.text == "0"
-                          ? false
-                          : true,
-                    ),
-                  );
+                int qty = int.tryParse(quantityController.text) ?? 1;
+double price = double.tryParse(priceController.text) ?? 0;
+
+productList.add(
+  Product(
+    name: nameController.text,
+    price: price,
+    shopName: "Royal Saree",
+    description: detailsController.text,
+    category: categoryController.text,
+    quantity: qty,
+  ),
+);
+
 
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text("Product Added")),
