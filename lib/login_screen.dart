@@ -121,7 +121,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(15),
                       borderSide: const BorderSide(
-                        color: Colors.deepPurple,
+                        color: Color(0xFF6A0F1F),
                         width: 2,
                       ),
                     ),
@@ -155,7 +155,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(15),
                       borderSide: const BorderSide(
-                        color: Colors.deepPurple,
+                        color: Color(0xFF6A0F1F),
                         width: 2,
                       ),
                     ),
@@ -170,7 +170,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: ElevatedButton(
                     onPressed: isLoading ? null : loginUser,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.deepPurple,
+                      backgroundColor: Color(0xFF6A0F1F),
                       padding:
                           const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
@@ -203,7 +203,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: const Text(
                       "Back",
                       style: TextStyle(
-                        color: Colors.deepPurple,
+                        color: Color(0xFF6A0F1F),
                       ),
                     ),
                   ),

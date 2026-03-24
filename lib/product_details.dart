@@ -1,7 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'product_model.dart';
 import 'shop_data.dart';
-import 'payment_page.dart';
 
 class ProductDetails extends StatelessWidget {
   final Product product;
@@ -11,61 +11,113 @@ class ProductDetails extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(product.name)),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
+      backgroundColor: const Color(0xFFF5F5F5),
+
+      appBar: AppBar(
+        title: Text(product.name),
+        backgroundColor: const Color(0xFF1B5E20),
+      ),
+
+      body: SingleChildScrollView(
         child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
 
-            const Center(
-              child: Icon(Icons.image, size: 120),
+            /// Product Image
+            Container(
+              height: 300,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                image: DecorationImage(
+                  image: FileImage(File(product.image)),
+                  fit: BoxFit.cover,
+                ),
+              ),
             ),
 
             const SizedBox(height: 20),
 
-            Text(product.name,
-                style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
 
-            Text("₹ ${product.price}"),
-
-            const SizedBox(height: 10),
-
-            Text(product.description),
-
-            const Spacer(),
-
-            ElevatedButton(
-              onPressed: () {
-                cartList.add(product);
-                ScaffoldMessenger.of(context)
-                    .showSnackBar(
-                  const SnackBar(
-                    content:
-                        Text("Added to Cart"),
+                  /// Product Name
+                  Text(
+                    product.name,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                );
-              },
-              child: const Text("Add to Cart"),
+
+                  const SizedBox(height: 10),
+
+                  /// Price
+                  Text(
+                    "₹ ${product.price}",
+                    style: const TextStyle(
+                      fontSize: 20,
+                      color: Colors.green,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  /// Description
+                  const Text(
+                    "Product Description",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  Text(
+                    product.description,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey,
+                    ),
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  /// Add to Cart
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1B5E20),
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                      ),
+                      onPressed: () {
+
+                        cartList.add(product);
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Added to cart"),
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        "Add to Cart",
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    ),
+                  ),
+
+                ],
+              ),
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(height: 40),
 
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        const PaymentPage(),
-                  ),
-                );
-              },
-              child: const Text("Buy Now"),
-            ),
           ],
         ),
       ),

@@ -1,17 +1,24 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'shop_data.dart';
-import 'product_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class AddProduct extends StatefulWidget {
-  const AddProduct({super.key});
+
+  final String shopName;
+
+  const AddProduct({
+    super.key,
+    required this.shopName,
+  });
 
   @override
   State<AddProduct> createState() => _AddProductState();
 }
 
 class _AddProductState extends State<AddProduct> {
+
   File? _image;
   final ImagePicker _picker = ImagePicker();
 
@@ -22,6 +29,7 @@ class _AddProductState extends State<AddProduct> {
   final TextEditingController categoryController = TextEditingController();
 
   Future<void> _pickImage() async {
+
     final XFile? picked =
         await _picker.pickImage(source: ImageSource.gallery);
 
@@ -32,24 +40,65 @@ class _AddProductState extends State<AddProduct> {
     }
   }
 
+  /// ADD PRODUCT TO FIRESTORE
+  void addProduct() async {
+
+    if (nameController.text.isEmpty ||
+        priceController.text.isEmpty ||
+        categoryController.text.isEmpty ||
+        _image == null) {
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please fill required fields")),
+      );
+      return;
+    }
+
+    final user = FirebaseAuth.instance.currentUser;
+
+    await FirebaseFirestore.instance.collection('products').add({
+
+      "name": nameController.text,
+      "price": double.parse(priceController.text),
+      "category": categoryController.text,
+      "description": detailsController.text,
+      "image": _image!.path,
+      "shopName": widget.shopName,
+      "ownerId": user!.uid,
+      "inStock": quantityController.text == "0" ? false : true,
+      "createdAt": Timestamp.now(),
+
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Product Added")),
+    );
+
+    Navigator.pop(context);
+  }
+
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       backgroundColor: const Color(0xFFF4F4F4),
+
       body: SingleChildScrollView(
         child: Column(
           children: [
 
-            // ===== HEADER =====
+            /// HEADER
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(20, 60, 20, 30),
+
               decoration: const BoxDecoration(
                 color: Color(0xFF8B0000),
                 borderRadius: BorderRadius.only(
                   bottomLeft: Radius.circular(40),
                 ),
               ),
+
               child: const Text(
                 "Add Product",
                 style: TextStyle(
@@ -62,16 +111,19 @@ class _AddProductState extends State<AddProduct> {
 
             const SizedBox(height: 30),
 
-            // ===== IMAGE =====
+            /// IMAGE PICKER
             GestureDetector(
               onTap: _pickImage,
+
               child: Container(
                 margin: const EdgeInsets.symmetric(horizontal: 20),
                 height: 200,
+
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
                   color: Colors.grey.shade200,
                 ),
+
                 child: _image == null
                     ? const Center(
                         child: Column(
@@ -96,36 +148,32 @@ class _AddProductState extends State<AddProduct> {
 
             const SizedBox(height: 30),
 
-            // ===== PRODUCT NAME =====
             buildField("Product Name", nameController),
 
             const SizedBox(height: 20),
 
-            // ===== PRICE =====
             buildField("Price", priceController,
                 type: TextInputType.number),
 
             const SizedBox(height: 20),
 
-            // ===== QUANTITY =====
             buildField("Quantity", quantityController,
                 type: TextInputType.number),
 
             const SizedBox(height: 20),
 
-            // ===== DETAILS =====
             buildField("Product Details", detailsController),
 
             const SizedBox(height: 20),
 
-            // ===== CATEGORY =====
             buildField("Category", categoryController),
 
             const SizedBox(height: 30),
 
-            // ===== ADD BUTTON =====
+            /// ADD BUTTON
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
+
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF8B0000),
@@ -134,35 +182,9 @@ class _AddProductState extends State<AddProduct> {
                     borderRadius: BorderRadius.circular(15),
                   ),
                 ),
-                onPressed: () {
 
-                  if (nameController.text.isEmpty ||
-                      priceController.text.isEmpty ||
-                      categoryController.text.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text("Please fill required fields")),
-                    );
-                    return;
-                  }
+                onPressed: addProduct,
 
-                  productList.add(
-                    Product(
-                      name: nameController.text,
-                      category: categoryController.text,
-                      price: double.parse(priceController.text),
-                      inStock: quantityController.text == "0"
-                          ? false
-                          : true,
-                    ),
-                  );
-
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Product Added")),
-                  );
-
-                  Navigator.pop(context);
-                },
                 child: const Text(
                   "Add Product",
                   style: TextStyle(fontSize: 16),
@@ -177,17 +199,24 @@ class _AddProductState extends State<AddProduct> {
     );
   }
 
-  Widget buildField(String label, TextEditingController controller,
-      {TextInputType type = TextInputType.text}) {
+  Widget buildField(
+    String label,
+    TextEditingController controller, {
+    TextInputType type = TextInputType.text,
+  }) {
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
+
       child: TextField(
         controller: controller,
         keyboardType: type,
+
         decoration: InputDecoration(
           labelText: label,
           filled: true,
           fillColor: Colors.white,
+
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
             borderSide: BorderSide.none,
