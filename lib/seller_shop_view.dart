@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -20,7 +19,7 @@ class _SellerShopViewState extends State<SellerShopView> {
       backgroundColor: const Color(0xFFF8F6F3),
 
       appBar: AppBar(
-        backgroundColor: const Color(0xFF7B0000),
+        backgroundColor: const Color(0xFF6A0F1F),
         title: const Text("My Shop"),
       ),
 
@@ -46,7 +45,6 @@ class _SellerShopViewState extends State<SellerShopView> {
           }
 
           var shop = snapshot.data!.docs.first;
-
           String shopName = shop['shopName'];
 
           return SingleChildScrollView(
@@ -54,7 +52,7 @@ class _SellerShopViewState extends State<SellerShopView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
 
-                /// SHOP BANNER
+                /// 🔥 BANNER
                 Stack(
                   clipBehavior: Clip.none,
                   children: [
@@ -64,7 +62,7 @@ class _SellerShopViewState extends State<SellerShopView> {
                       width: double.infinity,
                       decoration: BoxDecoration(
                         image: DecorationImage(
-                          image: FileImage(File(shop['banner'])),
+                          image: NetworkImage(shop['banner']),
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -75,7 +73,7 @@ class _SellerShopViewState extends State<SellerShopView> {
                       left: 20,
                       child: CircleAvatar(
                         radius: 40,
-                        backgroundImage: FileImage(File(shop['logo'])),
+                        backgroundImage: NetworkImage(shop['logo']),
                       ),
                     ),
                   ],
@@ -90,6 +88,7 @@ class _SellerShopViewState extends State<SellerShopView> {
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
+                      color: Color(0xFF6A0F1F),
                     ),
                   ),
                 ),
@@ -106,26 +105,21 @@ class _SellerShopViewState extends State<SellerShopView> {
 
                 const SizedBox(height: 20),
 
-                /// ADD PRODUCT BUTTON
+                /// 🔥 ADD PRODUCT BUTTON
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: SizedBox(
                     width: double.infinity,
-
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF7B0000),
+                        backgroundColor: const Color(0xFF6A0F1F),
                       ),
-
                       icon: const Icon(Icons.add, color: Colors.white),
-
                       label: const Text(
                         "Add Product",
                         style: TextStyle(color: Colors.white),
                       ),
-
                       onPressed: () {
-
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -134,15 +128,14 @@ class _SellerShopViewState extends State<SellerShopView> {
                             ),
                           ),
                         );
-
                       },
                     ),
                   ),
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 25),
 
-                /// PRODUCTS FROM FIRESTORE
+                /// 🔥 PRODUCTS LIST
                 StreamBuilder<QuerySnapshot>(
                   stream: FirebaseFirestore.instance
                       .collection('products')
@@ -175,32 +168,69 @@ class _SellerShopViewState extends State<SellerShopView> {
 
                         var product = products[index];
 
-                        return ListTile(
+                        return Container(
+                          margin: const EdgeInsets.symmetric(
+                              horizontal: 15, vertical: 8),
+                          padding: const EdgeInsets.all(12),
 
-                          leading: Image.file(
-                            File(product['image']),
-                            width: 50,
-                            height: 50,
-                            fit: BoxFit.cover,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 6,
+                              ),
+                            ],
                           ),
 
-                          title: Text(product['name']),
+                          child: Row(
+                            children: [
 
-                          subtitle: Text("₹ ${product['price']}"),
+                              /// IMAGE
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(
+                                  product['image'],
+                                  height: 60,
+                                  width: 60,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
 
-                          trailing: Switch(
-                            value: product['inStock'],
+                              const SizedBox(width: 12),
 
-                            onChanged: (value) {
+                              /// DETAILS
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      product['name'],
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    Text("₹ ${product['price']}"),
+                                  ],
+                                ),
+                              ),
 
-                              FirebaseFirestore.instance
-                                  .collection('products')
-                                  .doc(product.id)
-                                  .update({
-                                'inStock': value
-                              });
-
-                            },
+                              /// STOCK SWITCH
+                              Switch(
+                                activeColor: const Color(0xFF6A0F1F),
+                                value: product['inStock'],
+                                onChanged: (value) {
+                                  FirebaseFirestore.instance
+                                      .collection('products')
+                                      .doc(product.id)
+                                      .update({
+                                    'inStock': value
+                                  });
+                                },
+                              ),
+                            ],
                           ),
                         );
                       },
@@ -209,7 +239,6 @@ class _SellerShopViewState extends State<SellerShopView> {
                 ),
 
                 const SizedBox(height: 40),
-
               ],
             ),
           );

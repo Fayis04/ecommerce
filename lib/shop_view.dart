@@ -1,9 +1,8 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'shop_data.dart';
-import 'product_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'product_details.dart';
 import 'add_product.dart';
+import 'shop_data.dart';
 
 class ShopView extends StatefulWidget {
   final String shopName;
@@ -27,43 +26,19 @@ class ShopView extends StatefulWidget {
 
 class _ShopViewState extends State<ShopView> {
 
-  Map<String, List<Product>> groupProducts() {
-
-    Map<String, List<Product>> grouped = {};
-
-    for (var product in productList) {
-
-      if (product.shopName != widget.shopName) continue;
-
-      if (!grouped.containsKey(product.category)) {
-        grouped[product.category] = [];
-      }
-
-      grouped[product.category]!.add(product);
-    }
-
-    return grouped;
-  }
-
   @override
   Widget build(BuildContext context) {
-
-    final grouped = groupProducts();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F6F3),
 
-      /// SELLER ADD PRODUCT BUTTON
+      /// 🔥 SELLER ADD BUTTON
       floatingActionButton: widget.isSeller
           ? FloatingActionButton.extended(
               backgroundColor: const Color(0xFF6A0F1F),
               icon: const Icon(Icons.add, color: Colors.white),
-              label: const Text(
-                "Add Product",
-                style: TextStyle(color: Colors.white),
-              ),
+              label: const Text("Add Product"),
               onPressed: () {
-
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -71,10 +46,7 @@ class _ShopViewState extends State<ShopView> {
                       shopName: widget.shopName,
                     ),
                   ),
-                ).then((_) {
-                  setState(() {});
-                });
-
+                );
               },
             )
           : null,
@@ -84,7 +56,7 @@ class _ShopViewState extends State<ShopView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
 
-            /// BANNER
+            /// 🔥 BANNER
             Stack(
               clipBehavior: Clip.none,
               children: [
@@ -94,7 +66,7 @@ class _ShopViewState extends State<ShopView> {
                   width: double.infinity,
                   decoration: BoxDecoration(
                     image: DecorationImage(
-                      image: FileImage(File(widget.banner)),
+                      image: NetworkImage(widget.banner),
                       fit: BoxFit.cover,
                     ),
                   ),
@@ -105,7 +77,7 @@ class _ShopViewState extends State<ShopView> {
                   left: 20,
                   child: CircleAvatar(
                     radius: 40,
-                    backgroundImage: FileImage(File(widget.logo)),
+                    backgroundImage: NetworkImage(widget.logo),
                   ),
                 ),
               ],
@@ -120,12 +92,14 @@ class _ShopViewState extends State<ShopView> {
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
+                  color: Color(0xFF6A0F1F),
                 ),
               ),
             ),
 
             const SizedBox(height: 5),
 
+            /// CATEGORY
             Center(
               child: Text(
                 widget.category,
@@ -133,49 +107,65 @@ class _ShopViewState extends State<ShopView> {
               ),
             ),
 
-            const SizedBox(height: 30),
+            const SizedBox(height: 25),
 
-            /// PRODUCTS
-            ...grouped.keys.map((category) {
+            /// 🔥 PRODUCTS FROM FIRESTORE
+            StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('products')
+                  .where('shopName', isEqualTo: widget.shopName)
+                  .snapshots(),
 
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+              builder: (context, snapshot) {
 
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Text(
-                      category,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF6A0F1F),
-                      ),
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                var products = snapshot.data!.docs;
+
+                if (products.isEmpty) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(20),
+                      child: Text("No products yet"),
                     ),
+                  );
+                }
+
+                return GridView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 15),
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: products.length,
+
+                  gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 15,
+                    mainAxisSpacing: 15,
+                    childAspectRatio: 0.72,
                   ),
 
-                  const SizedBox(height: 10),
+                  itemBuilder: (context, index) {
 
-                  GridView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 15),
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
+                    var product = products[index];
 
-                    itemCount: grouped[category]!.length,
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ProductDetails(
+                              product: Product.fromMap(
+                                product.data() as Map<String, dynamic>,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
 
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 15,
-                      mainAxisSpacing: 15,
-                      childAspectRatio: 0.72,
-                    ),
-
-                    itemBuilder: (context, index) {
-
-                      final product = grouped[category]![index];
-
-                      return Container(
+                      child: Container(
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
@@ -191,13 +181,14 @@ class _ShopViewState extends State<ShopView> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
 
+                            /// IMAGE
                             ClipRRect(
                               borderRadius:
                                   const BorderRadius.vertical(
                                 top: Radius.circular(16),
                               ),
-                              child: Image.file(
-                                File(product.image),
+                              child: Image.network(
+                                product['image'],
                                 height: 120,
                                 width: double.infinity,
                                 fit: BoxFit.cover,
@@ -206,14 +197,13 @@ class _ShopViewState extends State<ShopView> {
 
                             Padding(
                               padding: const EdgeInsets.all(10),
-
                               child: Column(
                                 crossAxisAlignment:
                                     CrossAxisAlignment.start,
                                 children: [
 
                                   Text(
-                                    product.name,
+                                    product['name'],
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -222,9 +212,9 @@ class _ShopViewState extends State<ShopView> {
                                   const SizedBox(height: 5),
 
                                   Text(
-                                    "₹ ${product.price}",
+                                    "₹ ${product['price']}",
                                     style: const TextStyle(
-                                      color: Colors.green,
+                                      color: Color(0xFFD4AF37),
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -234,13 +224,18 @@ class _ShopViewState extends State<ShopView> {
                                   /// CUSTOMER BUTTON
                                   if (!widget.isSeller)
                                     ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
+                                      style:
+                                          ElevatedButton.styleFrom(
                                         backgroundColor:
-                                            const Color(0xFF1B5E20),
+                                            const Color(0xFF6A0F1F),
                                       ),
                                       onPressed: () {
-
-                                        cartList.add(product);
+                                        cartList.add(
+                                          Product.fromMap(
+                                            product.data()
+                                                as Map<String, dynamic>,
+                                          ),
+                                        );
 
                                         ScaffoldMessenger.of(context)
                                             .showSnackBar(
@@ -257,7 +252,7 @@ class _ShopViewState extends State<ShopView> {
                                       ),
                                     ),
 
-                                  /// SELLER CONTROLS
+                                  /// SELLER CONTROL
                                   if (widget.isSeller)
                                     Row(
                                       mainAxisAlignment:
@@ -267,11 +262,15 @@ class _ShopViewState extends State<ShopView> {
                                         const Text("In Stock"),
 
                                         Switch(
-                                          value: product.inStock,
+                                          value: product['inStock'],
+                                          activeColor:
+                                              const Color(0xFF6A0F1F),
                                           onChanged: (value) {
-                                            setState(() {
-                                              product.inStock =
-                                                  value;
+                                            FirebaseFirestore.instance
+                                                .collection('products')
+                                                .doc(product.id)
+                                                .update({
+                                              'inStock': value
                                             });
                                           },
                                         ),
@@ -282,14 +281,12 @@ class _ShopViewState extends State<ShopView> {
                             ),
                           ],
                         ),
-                      );
-                    },
-                  ),
-
-                  const SizedBox(height: 25),
-                ],
-              );
-            }).toList(),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
 
             const SizedBox(height: 80),
           ],

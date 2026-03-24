@@ -1,23 +1,8 @@
 import 'product_model.dart';
+import 'order_model.dart';
 
-/// All products in the app
-List<Product> productList = [];
-
-/// Cart items
+/// 🛒 CART (local for now)
 List<Product> cartList = [];
 
-class Shop {
-  String name;
-  String banner;
-  String logo;
-  String category;
-
-  Shop({
-    required this.name,
-    required this.banner,
-    required this.logo,
-    required this.category,
-  });
-}
-
-List<Shop> shopList = [];
+/// 📦 ORDER HISTORY (optional for future)
+List<Order> orderHistory = [];

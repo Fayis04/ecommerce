@@ -5,7 +5,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class AddProduct extends StatefulWidget {
-
   final String shopName;
 
   const AddProduct({
@@ -18,7 +17,6 @@ class AddProduct extends StatefulWidget {
 }
 
 class _AddProductState extends State<AddProduct> {
-
   File? _image;
   final ImagePicker _picker = ImagePicker();
 
@@ -29,7 +27,6 @@ class _AddProductState extends State<AddProduct> {
   final TextEditingController categoryController = TextEditingController();
 
   Future<void> _pickImage() async {
-
     final XFile? picked =
         await _picker.pickImage(source: ImageSource.gallery);
 
@@ -40,14 +37,12 @@ class _AddProductState extends State<AddProduct> {
     }
   }
 
-  /// ADD PRODUCT TO FIRESTORE
+  /// ✅ ADD PRODUCT TO FIRESTORE
   void addProduct() async {
-
     if (nameController.text.isEmpty ||
         priceController.text.isEmpty ||
         categoryController.text.isEmpty ||
         _image == null) {
-
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please fill required fields")),
       );
@@ -57,7 +52,6 @@ class _AddProductState extends State<AddProduct> {
     final user = FirebaseAuth.instance.currentUser;
 
     await FirebaseFirestore.instance.collection('products').add({
-
       "name": nameController.text,
       "price": double.parse(priceController.text),
       "category": categoryController.text,
@@ -67,7 +61,6 @@ class _AddProductState extends State<AddProduct> {
       "ownerId": user!.uid,
       "inStock": quantityController.text == "0" ? false : true,
       "createdAt": Timestamp.now(),
-
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -79,32 +72,28 @@ class _AddProductState extends State<AddProduct> {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F4F4),
+      backgroundColor: const Color(0xFFF8F6F3),
 
       body: SingleChildScrollView(
         child: Column(
           children: [
-
             /// HEADER
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(20, 60, 20, 30),
-
               decoration: const BoxDecoration(
-                color: Color(0xFF8B0000),
+                color: Color(0xFF6A0F1F),
                 borderRadius: BorderRadius.only(
                   bottomLeft: Radius.circular(40),
                 ),
               ),
-
               child: const Text(
                 "Add Product",
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: Color(0xFFD4AF37),
                 ),
               ),
             ),
@@ -114,16 +103,13 @@ class _AddProductState extends State<AddProduct> {
             /// IMAGE PICKER
             GestureDetector(
               onTap: _pickImage,
-
               child: Container(
                 margin: const EdgeInsets.symmetric(horizontal: 20),
                 height: 200,
-
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
                   color: Colors.grey.shade200,
                 ),
-
                 child: _image == null
                     ? const Center(
                         child: Column(
@@ -149,45 +135,40 @@ class _AddProductState extends State<AddProduct> {
             const SizedBox(height: 30),
 
             buildField("Product Name", nameController),
-
             const SizedBox(height: 20),
 
             buildField("Price", priceController,
                 type: TextInputType.number),
-
             const SizedBox(height: 20),
 
             buildField("Quantity", quantityController,
                 type: TextInputType.number),
-
             const SizedBox(height: 20),
 
             buildField("Product Details", detailsController),
-
             const SizedBox(height: 20),
 
             buildField("Category", categoryController),
-
             const SizedBox(height: 30),
 
             /// ADD BUTTON
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF8B0000),
+                  backgroundColor: const Color(0xFF6A0F1F),
                   minimumSize: const Size(double.infinity, 55),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(15),
                   ),
                 ),
-
                 onPressed: addProduct,
-
                 child: const Text(
                   "Add Product",
-                  style: TextStyle(fontSize: 16),
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Color(0xFFD4AF37),
+                  ),
                 ),
               ),
             ),
@@ -204,19 +185,16 @@ class _AddProductState extends State<AddProduct> {
     TextEditingController controller, {
     TextInputType type = TextInputType.text,
   }) {
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-
       child: TextField(
         controller: controller,
         keyboardType: type,
-
         decoration: InputDecoration(
           labelText: label,
+          labelStyle: const TextStyle(color: Color(0xFF6A0F1F)),
           filled: true,
           fillColor: Colors.white,
-
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
             borderSide: BorderSide.none,

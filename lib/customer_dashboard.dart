@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'dart:io';
 import 'shop_view.dart';
 
 class CustomerDashboard extends StatelessWidget {
@@ -16,11 +15,10 @@ class CustomerDashboard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
 
-            /// HEADER
+            /// 🔥 HEADER (CLEAN + PREMIUM)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(20, 60, 20, 30),
-
               decoration: const BoxDecoration(
                 color: Color(0xFF6A0F1F),
                 borderRadius: BorderRadius.only(
@@ -28,20 +26,49 @@ class CustomerDashboard extends StatelessWidget {
                   bottomRight: Radius.circular(40),
                 ),
               ),
-
               child: const Text(
                 "Vendura",
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFFD4AF37),
-                  letterSpacing: 1,
                 ),
               ),
             ),
 
             const SizedBox(height: 30),
 
+            /// 🔥 CATEGORIES
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                "Categories",
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF6A0F1F),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 15),
+
+            SizedBox(
+              height: 110,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                children: [
+                  categoryCard("Saree", "assets/saree.jpeg"),
+                  categoryCard("Bangles", "assets/bangles.jpeg"),
+                  categoryCard("Pashmina", "assets/pashmina.jpeg"),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 30),
+
+            /// 🔥 SHOPS TITLE
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 20),
               child: Text(
@@ -56,7 +83,7 @@ class CustomerDashboard extends StatelessWidget {
 
             const SizedBox(height: 15),
 
-            /// FIRESTORE SHOP LIST
+            /// 🔥 FIRESTORE SHOPS
             StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('shops')
@@ -65,17 +92,10 @@ class CustomerDashboard extends StatelessWidget {
 
               builder: (context, snapshot) {
 
-                /// LOADING
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(20),
-                      child: CircularProgressIndicator(),
-                    ),
-                  );
+                  return const Center(child: CircularProgressIndicator());
                 }
 
-                /// NO SHOPS
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return const Center(
                     child: Padding(
@@ -85,25 +105,22 @@ class CustomerDashboard extends StatelessWidget {
                   );
                 }
 
-                var shops = snapshot.data!.docs;
+                final shops = snapshot.data!.docs;
 
-                return ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: shops.length,
+                return Column(
+                  children: shops.map((shop) {
 
-                  itemBuilder: (context, index) {
-
-                    var shop = shops[index];
+                    final data = shop.data() as Map<String, dynamic>;
 
                     return shopCard(
                       context,
-                      shop['shopName'],
-                      shop['logo'],
-                      shop['banner'],
-                      shop['category'],
+                      data['shopName'] ?? "",
+                      data['logo'] ?? "",
+                      data['banner'] ?? "",
+                      data['category'] ?? "",
                     );
-                  },
+
+                  }).toList(),
                 );
               },
             ),
@@ -115,7 +132,7 @@ class CustomerDashboard extends StatelessWidget {
     );
   }
 
-  /// SHOP CARD UI
+  /// 🔥 SHOP CARD (FIXED)
   Widget shopCard(
     BuildContext context,
     String name,
@@ -126,7 +143,6 @@ class CustomerDashboard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -138,7 +154,6 @@ class CustomerDashboard extends StatelessWidget {
             ),
           ),
         );
-
       },
 
       child: Container(
@@ -148,7 +163,6 @@ class CustomerDashboard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
@@ -160,34 +174,19 @@ class CustomerDashboard extends StatelessWidget {
         child: Row(
           children: [
 
-            /// SHOP LOGO
-            ClipRRect(
-              borderRadius: BorderRadius.circular(50),
-
-              child: logo.isNotEmpty
-                  ? Image.file(
-                      File(logo),
-                      height: 56,
-                      width: 56,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Icon(
-                          Icons.store,
-                          size: 40,
-                          color: Color(0xFF6A0F1F),
-                        );
-                      },
-                    )
-                  : const Icon(
-                      Icons.store,
-                      size: 40,
-                      color: Color(0xFF6A0F1F),
-                    ),
+            /// ✅ FIXED: NETWORK IMAGE (NOT FILE)
+            CircleAvatar(
+              radius: 28,
+              backgroundColor: Colors.grey.shade200,
+              backgroundImage:
+                  logo.isNotEmpty ? NetworkImage(logo) : null,
+              child: logo.isEmpty
+                  ? const Icon(Icons.store, color: Color(0xFF6A0F1F))
+                  : null,
             ),
 
             const SizedBox(width: 16),
 
-            /// SHOP DETAILS
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -220,6 +219,38 @@ class CustomerDashboard extends StatelessWidget {
               color: Color(0xFF6A0F1F),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// CATEGORY CARD
+  Widget categoryCard(String title, String image) {
+    return Container(
+      width: 110,
+      margin: const EdgeInsets.only(right: 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        image: DecorationImage(
+          image: AssetImage(image),
+          fit: BoxFit.cover,
+        ),
+      ),
+      alignment: Alignment.bottomCenter,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(6),
+        decoration: const BoxDecoration(
+          color: Colors.black54,
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(16),
+            bottomRight: Radius.circular(16),
+          ),
+        ),
+        child: Text(
+          title,
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: Colors.white),
         ),
       ),
     );
