@@ -4,6 +4,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+// 👉 IMPORT CLOUDINARY (same as your shop upload)
+import 'package:cloudinary_public/cloudinary_public.dart';
+
 class AddProduct extends StatefulWidget {
   final String shopName;
 
@@ -26,6 +29,11 @@ class _AddProductState extends State<AddProduct> {
   final TextEditingController detailsController = TextEditingController();
   final TextEditingController categoryController = TextEditingController();
 
+  bool isLoading = false;
+
+  // 👉 INIT CLOUDINARY (use SAME config you used before)
+  final cloudinary = CloudinaryPublic('dnkjruqx3', 'vendura_upload');
+
   Future<void> _pickImage() async {
     final XFile? picked =
         await _picker.pickImage(source: ImageSource.gallery);
@@ -35,6 +43,18 @@ class _AddProductState extends State<AddProduct> {
         _image = File(picked.path);
       });
     }
+  }
+
+  /// 🔥 UPLOAD IMAGE TO CLOUDINARY
+  Future<String> uploadImage(File imageFile) async {
+    final response = await cloudinary.uploadFile(
+      CloudinaryFile.fromFile(
+        imageFile.path,
+        resourceType: CloudinaryResourceType.Image,
+      ),
+    );
+
+    return response.secureUrl; // ✅ IMPORTANT
   }
 
   /// ✅ ADD PRODUCT TO FIRESTORE
@@ -49,25 +69,39 @@ class _AddProductState extends State<AddProduct> {
       return;
     }
 
-    final user = FirebaseAuth.instance.currentUser;
+    try {
+      setState(() => isLoading = true);
 
-    await FirebaseFirestore.instance.collection('products').add({
-      "name": nameController.text,
-      "price": double.parse(priceController.text),
-      "category": categoryController.text,
-      "description": detailsController.text,
-      "image": _image!.path,
-      "shopName": widget.shopName,
-      "ownerId": user!.uid,
-      "inStock": quantityController.text == "0" ? false : true,
-      "createdAt": Timestamp.now(),
-    });
+      final user = FirebaseAuth.instance.currentUser;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Product Added")),
-    );
+      // 🔥 STEP 1: upload image
+      String imageUrl = await uploadImage(_image!);
 
-    Navigator.pop(context);
+      // 🔥 STEP 2: save URL (NOT path)
+      await FirebaseFirestore.instance.collection('products').add({
+        "name": nameController.text,
+        "price": double.parse(priceController.text),
+        "category": categoryController.text,
+        "description": detailsController.text,
+        "image": imageUrl, // ✅ FIXED
+        "shopName": widget.shopName,
+        "ownerId": user!.uid,
+        "inStock": quantityController.text == "0" ? false : true,
+        "createdAt": Timestamp.now(),
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Product Added")),
+      );
+
+      Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e")),
+      );
+    } finally {
+      setState(() => isLoading = false);
+    }
   }
 
   @override
@@ -162,14 +196,16 @@ class _AddProductState extends State<AddProduct> {
                     borderRadius: BorderRadius.circular(15),
                   ),
                 ),
-                onPressed: addProduct,
-                child: const Text(
-                  "Add Product",
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Color(0xFFD4AF37),
-                  ),
-                ),
+                onPressed: isLoading ? null : addProduct,
+                child: isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
+                        "Add Product",
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Color(0xFFD4AF37),
+                        ),
+                      ),
               ),
             ),
 

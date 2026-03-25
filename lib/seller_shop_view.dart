@@ -11,7 +11,6 @@ class SellerShopView extends StatefulWidget {
 }
 
 class _SellerShopViewState extends State<SellerShopView> {
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -19,7 +18,7 @@ class _SellerShopViewState extends State<SellerShopView> {
 
       appBar: AppBar(
         backgroundColor: const Color(0xFF6A0F1F),
-        title: const Text("My Shop"),
+        title: const Text("My Shops"),
       ),
 
       body: StreamBuilder<QuerySnapshot>(
@@ -30,7 +29,6 @@ class _SellerShopViewState extends State<SellerShopView> {
               isEqualTo: FirebaseAuth.instance.currentUser!.uid,
             )
             .snapshots(),
-
         builder: (context, snapshot) {
 
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -56,208 +54,217 @@ class _SellerShopViewState extends State<SellerShopView> {
               String logo = shopData['logo'] ?? "";
               String category = shopData['category'] ?? "";
 
-              return Container(
-                margin: const EdgeInsets.only(bottom: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
 
-                    /// 🔥 BANNER + LOGO
-                    Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-
-                        Container(
-                          height: 200,
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            image: DecorationImage(
-                              image: banner.isNotEmpty
-                                  ? NetworkImage(banner)
-                                  : const AssetImage('assets/placeholder.png') as ImageProvider,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-
-                        Positioned(
-                          bottom: -40,
-                          left: 20,
-                          child: CircleAvatar(
-                            radius: 40,
-                            backgroundImage: logo.isNotEmpty
-                                ? NetworkImage(logo)
-                                : const AssetImage('assets/placeholder.png'),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 50),
-
-                    /// SHOP NAME
-                    Center(
-                      child: Text(
-                        shopName,
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF6A0F1F),
-                        ),
+                  /// 🔥 BANNER
+                  Container(
+                    height: 160,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      image: DecorationImage(
+                        image: banner.isNotEmpty
+                            ? NetworkImage(banner)
+                            : const AssetImage('assets/placeholder.png') as ImageProvider,
+                        fit: BoxFit.cover,
                       ),
                     ),
+                  ),
 
-                    const SizedBox(height: 5),
-
-                    /// CATEGORY
-                    Center(
-                      child: Text(
-                        category,
-                        style: const TextStyle(color: Colors.grey),
-                      ),
+                  /// 🔥 SHOP INFO
+                  ListTile(
+                    leading: CircleAvatar(
+                      backgroundImage: logo.isNotEmpty
+                          ? NetworkImage(logo)
+                          : const AssetImage('assets/placeholder.png'),
                     ),
+                    title: Text(
+                      shopName,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Text(category),
+                  ),
 
-                    const SizedBox(height: 20),
+                  /// 🔥 ADD PRODUCT BUTTON
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 15),
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF6A0F1F),
+                        minimumSize: const Size(double.infinity, 45),
+                      ),
+                      icon: const Icon(Icons.add, color: Colors.white),
+                      label: const Text(
+                        "Add Product",
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AddProduct(shopName: shopName),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
 
-                    /// 🔥 ADD PRODUCT BUTTON
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF6A0F1F),
-                          ),
-                          icon: const Icon(Icons.add, color: Colors.white),
-                          label: const Text(
-                            "Add Product",
-                            style: TextStyle(color: Colors.white),
-                          ),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => AddProduct(
-                                  shopName: shopName,
+                  const SizedBox(height: 10),
+
+                  /// 🔥 PRODUCTS
+                  StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('products')
+                        .where('shopName', isEqualTo: shopName)
+                        .snapshots(),
+                    builder: (context, productSnapshot) {
+
+                      if (!productSnapshot.hasData) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+
+                      var products = productSnapshot.data!.docs;
+
+                      if (products.isEmpty) {
+                        return const Padding(
+                          padding: EdgeInsets.all(10),
+                          child: Center(child: Text("No products yet")),
+                        );
+                      }
+
+                      return ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: products.length,
+                        itemBuilder: (context, i) {
+
+                          var product = products[i];
+                          var data = product.data() as Map<String, dynamic>;
+
+                          int qty = data['quantity'] ?? 0;
+                          String image = data['image'] ?? "";
+
+                          return Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+                            padding: const EdgeInsets.all(12),
+
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 6,
                                 ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 25),
-
-                    /// 🔥 PRODUCTS LIST
-                    StreamBuilder<QuerySnapshot>(
-                      stream: FirebaseFirestore.instance
-                          .collection('products')
-                          .where('shopName', isEqualTo: shopName)
-                          .snapshots(),
-
-                      builder: (context, productSnapshot) {
-
-                        if (!productSnapshot.hasData) {
-                          return const Center(child: CircularProgressIndicator());
-                        }
-
-                        var products = productSnapshot.data!.docs;
-
-                        if (products.isEmpty) {
-                          return const Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(20),
-                              child: Text("No products yet"),
+                              ],
                             ),
-                          );
-                        }
 
-                        return ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: products.length,
+                            child: Row(
+                              children: [
 
-                          itemBuilder: (context, i) {
-
-                            var product = products[i];
-
-                            return Container(
-                              margin: const EdgeInsets.symmetric(
-                                  horizontal: 15, vertical: 8),
-                              padding: const EdgeInsets.all(12),
-
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
-                                    blurRadius: 6,
+                                /// IMAGE
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image(
+                                    image: image.startsWith('http')
+                                        ? NetworkImage(image)
+                                        : const AssetImage('assets/placeholder.png') as ImageProvider,
+                                    height: 60,
+                                    width: 60,
+                                    fit: BoxFit.cover,
                                   ),
-                                ],
-                              ),
+                                ),
 
-                              child: Row(
-                                children: [
+                                const SizedBox(width: 12),
 
-                                  /// IMAGE
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Image(
-                                      image: (product['image'] != null &&
-                                              product['image'].toString().startsWith('http'))
-                                          ? NetworkImage(product['image'])
-                                          : const AssetImage('assets/placeholder.png') as ImageProvider,
-                                      height: 60,
-                                      width: 60,
-                                      fit: BoxFit.cover,
-                                    ),
+                                /// DETAILS
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        data['name'] ?? "",
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      Text("₹ ${data['price'] ?? 0}"),
+                                    ],
                                   ),
+                                ),
 
-                                  const SizedBox(width: 12),
-
-                                  /// DETAILS
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                /// 🔥 QUANTITY CONTROL
+                                Column(
+                                  children: [
+                                    Row(
                                       children: [
+
+                                        /// ➖
+                                        IconButton(
+                                          icon: const Icon(Icons.remove),
+                                          onPressed: () async {
+                                            if (qty > 0) {
+                                              int newQty = qty - 1;
+
+                                              await FirebaseFirestore.instance
+                                                  .collection('products')
+                                                  .doc(product.id)
+                                                  .update({
+                                                "quantity": newQty,
+                                                "inStock": newQty > 0,
+                                              });
+                                            }
+                                          },
+                                        ),
+
+                                        /// QTY
                                         Text(
-                                          product['name'] ?? "",
+                                          "$qty",
                                           style: const TextStyle(
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
-                                        Text("₹ ${product['price'] ?? ""}"),
+
+                                        /// ➕
+                                        IconButton(
+                                          icon: const Icon(Icons.add),
+                                          onPressed: () async {
+                                            int newQty = qty + 1;
+
+                                            await FirebaseFirestore.instance
+                                                .collection('products')
+                                                .doc(product.id)
+                                                .update({
+                                              "quantity": newQty,
+                                              "inStock": true,
+                                            });
+                                          },
+                                        ),
                                       ],
                                     ),
-                                  ),
 
-                                  /// STOCK SWITCH
-                                  Switch(
-                                    activeThumbColor: const Color(0xFF6A0F1F),
-                                    value: product['inStock'] ?? true,
-                                    onChanged: (value) {
-                                      FirebaseFirestore.instance
-                                          .collection('products')
-                                          .doc(product.id)
-                                          .update({
-                                        'inStock': value
-                                      });
-                                    },
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ),
+                                    /// STOCK TEXT
+                                    Text(
+                                      qty > 0 ? "In Stock" : "Out of Stock",
+                                      style: TextStyle(
+                                        color: qty > 0 ? Colors.green : Colors.red,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
 
-                    const SizedBox(height: 40),
-                  ],
-                ),
+                  const SizedBox(height: 20),
+                  const Divider(thickness: 2),
+                ],
               );
             },
           );

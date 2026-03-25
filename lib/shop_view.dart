@@ -26,7 +26,7 @@ class ShopView extends StatefulWidget {
 }
 
 class _ShopViewState extends State<ShopView> {
-  /// 🔥 ADD TO CART FUNCTION
+
   Future<void> addToCart({
     required String productId,
     required String name,
@@ -35,7 +35,12 @@ class _ShopViewState extends State<ShopView> {
   }) async {
     final user = FirebaseAuth.instance.currentUser;
 
-    if (user == null) return;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please login")),
+      );
+      return;
+    }
 
     final cartRef = FirebaseFirestore.instance
         .collection('users')
@@ -55,6 +60,18 @@ class _ShopViewState extends State<ShopView> {
         'image': image,
         'quantity': 1,
       });
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Added to cart")),
+    );
+  }
+
+  ImageProvider getImage(String url) {
+    if (url.startsWith('http')) {
+      return NetworkImage(url);
+    } else {
+      return const AssetImage('assets/placeholder.png');
     }
   }
 
@@ -83,7 +100,8 @@ class _ShopViewState extends State<ShopView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /// 🔥 PREMIUM BANNER
+
+            /// BANNER
             Stack(
               clipBehavior: Clip.none,
               children: [
@@ -92,7 +110,7 @@ class _ShopViewState extends State<ShopView> {
                   width: double.infinity,
                   decoration: BoxDecoration(
                     image: DecorationImage(
-                      image: NetworkImage(widget.banner),
+                      image: getImage(widget.banner),
                       fit: BoxFit.cover,
                     ),
                   ),
@@ -117,7 +135,7 @@ class _ShopViewState extends State<ShopView> {
                     backgroundColor: Colors.white,
                     child: CircleAvatar(
                       radius: 38,
-                      backgroundImage: NetworkImage(widget.logo),
+                      backgroundImage: getImage(widget.logo),
                     ),
                   ),
                 ),
@@ -126,7 +144,7 @@ class _ShopViewState extends State<ShopView> {
 
             const SizedBox(height: 50),
 
-            /// SHOP NAME + CATEGORY
+            /// SHOP INFO
             Center(
               child: Column(
                 children: [
@@ -149,13 +167,14 @@ class _ShopViewState extends State<ShopView> {
 
             const SizedBox(height: 25),
 
-            /// 🔥 PRODUCTS
+            /// PRODUCTS GRID
             StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('products')
                   .where('shopName', isEqualTo: widget.shopName)
                   .snapshots(),
               builder: (context, snapshot) {
+
                 if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
                 }
@@ -176,19 +195,20 @@ class _ShopViewState extends State<ShopView> {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: products.length,
+
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     crossAxisSpacing: 15,
                     mainAxisSpacing: 15,
-                    childAspectRatio: 0.75,
+                    childAspectRatio: 0.72,
                   ),
+
                   itemBuilder: (context, index) {
                     var product = products[index];
                     var data = product.data() as Map<String, dynamic>;
 
                     return GestureDetector(
                       onTap: () {
-                        /// ✅ ONLY NAVIGATION (NO CART ADD)
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -213,44 +233,62 @@ class _ShopViewState extends State<ShopView> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            /// IMAGE + CART ICON
+
+                            /// IMAGE
                             ClipRRect(
                               borderRadius: const BorderRadius.vertical(
                                 top: Radius.circular(18),
                               ),
-                              child: Stack(
-                                children: [
-                                  Image.network(
-                                    data['image'],
-                                    height: 130,
-                                    width: double.infinity,
-                                    fit: BoxFit.cover,
-                                  ),
+                              child: Image(
+                                image: getImage(data['image'] ?? ""),
+                                height: 120,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
 
-                                  /// 🛒 ONLY ADD BUTTON
-                                  if (!widget.isSeller)
-                                    Positioned(
-                                      top: 8,
-                                      right: 8,
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          borderRadius: BorderRadius.circular(
-                                            30,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black.withOpacity(
-                                                0.1,
-                                              ),
-                                              blurRadius: 6,
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.all(10),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+
+                                    Text(
+                                      data['name'],
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 4),
+
+                                    Text(
+                                      "₹ ${data['price']}",
+                                      style: const TextStyle(
+                                        color: Color(0xFFD4AF37),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+
+                                    const Spacer(),
+
+                                    /// ✅ FIXED BUTTON (NO MORE CUT TEXT)
+                                    if (!widget.isSeller)
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor:
+                                                const Color(0xFF6A0F1F),
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 10, // 🔥 FIX
                                             ),
-                                          ],
-                                        ),
-                                        child: IconButton(
-                                          icon: const Icon(
-                                            Icons.add_shopping_cart,
-                                            color: Color(0xFF6A0F1F),
+                                            minimumSize: const Size.fromHeight(40), // 🔥 FIX
                                           ),
                                           onPressed: () async {
                                             await addToCart(
@@ -260,72 +298,42 @@ class _ShopViewState extends State<ShopView> {
                                                   .toDouble(),
                                               image: data['image'],
                                             );
-
-                                            ScaffoldMessenger.of(
-                                              context,
-                                            ).showSnackBar(
-                                              const SnackBar(
-                                                content: Text("Added to cart"),
-                                              ),
-                                            );
                                           },
+                                          child: const FittedBox(
+                                            fit: BoxFit.scaleDown, // 🔥 EXTRA SAFETY
+                                            child: Text(
+                                              "Add to Cart",
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                ],
-                              ),
-                            ),
 
-                            Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    data['name'],
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
-                                    ),
-                                  ),
-
-                                  const SizedBox(height: 6),
-
-                                  Text(
-                                    "₹ ${data['price']}",
-                                    style: const TextStyle(
-                                      color: Color(0xFFD4AF37),
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-
-                                  const SizedBox(height: 6),
-
-                                  /// SELLER CONTROL
-                                  if (widget.isSeller)
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        const Text("In Stock"),
-                                        Switch(
-                                          value: data['inStock'],
-                                          activeThumbColor: const Color(
-                                            0xFF6A0F1F,
+                                    if (widget.isSeller)
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          const Text("In Stock"),
+                                          Switch(
+                                            value: data['inStock'],
+                                            activeThumbColor:
+                                                const Color(0xFF6A0F1F),
+                                            onChanged: (value) {
+                                              FirebaseFirestore.instance
+                                                  .collection('products')
+                                                  .doc(product.id)
+                                                  .update(
+                                                      {'inStock': value});
+                                            },
                                           ),
-                                          onChanged: (value) {
-                                            FirebaseFirestore.instance
-                                                .collection('products')
-                                                .doc(product.id)
-                                                .update({'inStock': value});
-                                          },
-                                        ),
-                                      ],
-                                    ),
-                                ],
+                                        ],
+                                      ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],

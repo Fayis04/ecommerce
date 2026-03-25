@@ -1,3 +1,5 @@
+import 'dart:io'; // 🔥 IMPORTANT (for FileImage)
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'shop_view.dart';
@@ -22,7 +24,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
 
-            /// 🔥 HEADER WITH CART + PROFILE
+            /// 🔥 HEADER
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(20, 60, 20, 20),
@@ -47,7 +49,8 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
 
                   Row(
                     children: [
-                      /// 🛒 CART BUTTON
+
+                      /// 🛒 CART
                       IconButton(
                         icon: const Icon(Icons.shopping_cart, color: Colors.white),
                         onPressed: () {
@@ -60,7 +63,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                         },
                       ),
 
-                      /// 👤 PROFILE BUTTON
+                      /// 👤 PROFILE
                       IconButton(
                         icon: const Icon(Icons.person, color: Colors.white),
                         onPressed: () {
@@ -78,7 +81,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
               ),
             ),
 
-            /// 🔍 SEARCH BAR
+            /// 🔍 SEARCH
             Padding(
               padding: const EdgeInsets.all(20),
               child: TextField(
@@ -130,7 +133,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
 
             const SizedBox(height: 30),
 
-            /// 🔥 SHOPS TITLE
+            /// 🔥 SHOPS
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 20),
               child: Text(
@@ -145,7 +148,6 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
 
             const SizedBox(height: 15),
 
-            /// 🔥 FIRESTORE SHOPS WITH SEARCH
             StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('shops')
@@ -178,7 +180,6 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
 
                 return Column(
                   children: shops.map((shop) {
-
                     final data = shop.data() as Map<String, dynamic>;
 
                     return shopCard(
@@ -188,7 +189,6 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                       data['banner'] ?? "",
                       data['category'] ?? "",
                     );
-
                   }).toList(),
                 );
               },
@@ -239,11 +239,14 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
         child: Row(
           children: [
 
+            /// 🔥 FIXED LOGO
             CircleAvatar(
               radius: 28,
               backgroundColor: Colors.grey.shade200,
-              backgroundImage: logo.isNotEmpty ? NetworkImage(logo) : null,
-              child: logo.isEmpty
+              backgroundImage: (logo.isNotEmpty && logo.startsWith('http'))
+                  ? NetworkImage(logo)
+                  : null,
+              child: (logo.isEmpty || !logo.startsWith('http'))
                   ? const Icon(Icons.store, color: Color(0xFF6A0F1F))
                   : null,
             ),
@@ -254,30 +257,19 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
+                  Text(name,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 16)),
                   const SizedBox(height: 4),
-                  Text(
-                    category,
-                    style: const TextStyle(
-                      color: Colors.grey,
-                      fontSize: 13,
-                    ),
-                  ),
+                  Text(category,
+                      style:
+                          const TextStyle(color: Colors.grey, fontSize: 13)),
                 ],
               ),
             ),
 
-            const Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: Color(0xFF6A0F1F),
-            ),
+            const Icon(Icons.arrow_forward_ios,
+                size: 16, color: Color(0xFF6A0F1F)),
           ],
         ),
       ),
@@ -307,17 +299,15 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
             bottomRight: Radius.circular(16),
           ),
         ),
-        child: Text(
-          title,
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: Colors.white),
-        ),
+        child: Text(title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.white)),
       ),
     );
   }
 }
 
-/// 🛒 REAL CART PAGE (FIRESTORE CONNECTED)
+/// 🛒 CART PAGE
 class CartPage extends StatelessWidget {
   const CartPage({super.key});
 
@@ -340,8 +330,8 @@ class CartPage extends StatelessWidget {
             .doc(user.uid)
             .collection('cart')
             .snapshots(),
-
         builder: (context, snapshot) {
+
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -351,13 +341,11 @@ class CartPage extends StatelessWidget {
           }
 
           final items = snapshot.data!.docs;
-
           double total = 0;
 
           return Column(
             children: [
 
-              /// 🛒 ITEMS LIST
               Expanded(
                 child: ListView(
                   children: items.map((doc) {
@@ -369,12 +357,17 @@ class CartPage extends StatelessWidget {
                     total += price * quantity;
 
                     return ListTile(
-                      leading: Image.network(
-                        data['image'] ?? "",
-                        width: 50,
-                        errorBuilder: (_, __, ___) =>
-                            const Icon(Icons.image),
-                      ),
+
+                      /// 🔥 FIXED IMAGE
+                      leading: (data['image'] != null &&
+                              data['image'].toString().startsWith('http'))
+                          ? Image.network(
+                              data['image'],
+                              width: 50,
+                              fit: BoxFit.cover,
+                            )
+                          : const Icon(Icons.image),
+
                       title: Text(data['name'] ?? ""),
                       subtitle: Text("₹$price x $quantity"),
 
@@ -382,7 +375,6 @@ class CartPage extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
 
-                          /// ➖ DECREASE
                           IconButton(
                             icon: const Icon(Icons.remove),
                             onPressed: () async {
@@ -396,7 +388,6 @@ class CartPage extends StatelessWidget {
                             },
                           ),
 
-                          /// ➕ INCREASE
                           IconButton(
                             icon: const Icon(Icons.add),
                             onPressed: () async {
@@ -412,40 +403,19 @@ class CartPage extends StatelessWidget {
                 ),
               ),
 
-              /// 💰 TOTAL + CHECKOUT
+              /// TOTAL
               Container(
                 padding: const EdgeInsets.all(20),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      blurRadius: 5,
-                      color: Colors.black12,
-                    )
-                  ],
-                ),
                 child: Column(
                   children: [
-                    Text(
-                      "Total: ₹${total.toStringAsFixed(2)}",
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-
+                    Text("Total: ₹${total.toStringAsFixed(2)}",
+                        style: const TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 10),
-
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Checkout coming soon"),
-                            ),
-                          );
-                        },
+                        onPressed: () {},
                         child: const Text("Checkout"),
                       ),
                     ),
@@ -460,8 +430,7 @@ class CartPage extends StatelessWidget {
   }
 }
 
-
-/// 👤 PROFILE PAGE
+/// 👤 PROFILE
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
