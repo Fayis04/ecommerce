@@ -95,7 +95,7 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
 
       /// Save to Firestore
       await FirebaseFirestore.instance.collection("shops").add({
-        "ownerId": user.uid,
+        "ownerId": FirebaseAuth.instance.currentUser!.uid,
         "shopName": shopNameController.text.trim(),
         "category": categoryController.text.trim(),
         "banner": bannerUrl,

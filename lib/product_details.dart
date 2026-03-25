@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'product_model.dart';
 import 'shop_data.dart';
+import 'payment_page.dart';
 
 class ProductDetails extends StatelessWidget {
   final Product product;
@@ -21,8 +22,7 @@ class ProductDetails extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
-            /// 🔥 PRODUCT IMAGE (FIXED)
+            /// 🔥 PRODUCT IMAGE
             Container(
               height: 300,
               width: double.infinity,
@@ -31,7 +31,7 @@ class ProductDetails extends StatelessWidget {
                   image: product.image.startsWith("http")
                       ? NetworkImage(product.image)
                       : const AssetImage("assets/placeholder.png")
-                          as ImageProvider,
+                            as ImageProvider,
                   fit: BoxFit.cover,
                 ),
               ),
@@ -44,8 +44,7 @@ class ProductDetails extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-
-                  /// NAME
+                  /// 🔥 NAME
                   Text(
                     product.name,
                     style: const TextStyle(
@@ -57,7 +56,7 @@ class ProductDetails extends StatelessWidget {
 
                   const SizedBox(height: 10),
 
-                  /// PRICE
+                  /// 🔥 PRICE
                   Text(
                     "₹ ${product.price}",
                     style: const TextStyle(
@@ -69,7 +68,7 @@ class ProductDetails extends StatelessWidget {
 
                   const SizedBox(height: 20),
 
-                  /// DESCRIPTION TITLE
+                  /// 🔥 DESCRIPTION TITLE
                   const Text(
                     "Product Description",
                     style: TextStyle(
@@ -81,13 +80,10 @@ class ProductDetails extends StatelessWidget {
 
                   const SizedBox(height: 10),
 
-                  /// DESCRIPTION
+                  /// 🔥 DESCRIPTION
                   Text(
                     product.description,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.black54,
-                    ),
+                    style: const TextStyle(fontSize: 14, color: Colors.black54),
                   ),
 
                   const SizedBox(height: 30),
@@ -99,14 +95,15 @@ class ProductDetails extends StatelessWidget {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF6A0F1F),
                         padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       onPressed: () {
                         cartList.add(product);
 
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("Added to cart"),
-                          ),
+                          const SnackBar(content: Text("Added to cart")),
                         );
                       },
                       child: const Text(
@@ -114,6 +111,7 @@ class ProductDetails extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 16,
                           color: Color(0xFFD4AF37),
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
@@ -121,7 +119,7 @@ class ProductDetails extends StatelessWidget {
 
                   const SizedBox(height: 15),
 
-                  /// 🔥 BUY NOW (KEPT FROM OTHER BRANCH)
+                  /// 🔥 BUY NOW (FIXED)
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton(
@@ -131,15 +129,28 @@ class ProductDetails extends StatelessWidget {
                           width: 2,
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       onPressed: () {
-                        // TODO: Navigate to payment page
+                        /// optional: instant checkout
+                        cartList.clear();
+                        cartList.add(product);
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => PaymentPage(total: product.price),
+                          ),
+                        );
                       },
                       child: const Text(
                         "Buy Now",
                         style: TextStyle(
                           fontSize: 16,
                           color: Color(0xFF6A0F1F),
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),

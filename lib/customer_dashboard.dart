@@ -1,24 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'shop_view.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-class CustomerDashboard extends StatelessWidget {
+class CustomerDashboard extends StatefulWidget {
   const CustomerDashboard({super.key});
+
+  @override
+  State<CustomerDashboard> createState() => _CustomerDashboardState();
+}
+
+class _CustomerDashboardState extends State<CustomerDashboard> {
+  String searchQuery = "";
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F6F3),
-
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
 
-            /// 🔥 HEADER (CLEAN + PREMIUM)
+            /// 🔥 HEADER WITH CART + PROFILE
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(20, 60, 20, 30),
+              padding: const EdgeInsets.fromLTRB(20, 60, 20, 20),
               decoration: const BoxDecoration(
                 color: Color(0xFF6A0F1F),
                 borderRadius: BorderRadius.only(
@@ -26,17 +33,72 @@ class CustomerDashboard extends StatelessWidget {
                   bottomRight: Radius.circular(40),
                 ),
               ),
-              child: const Text(
-                "Vendura",
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFFD4AF37),
-                ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Vendura",
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFD4AF37),
+                    ),
+                  ),
+
+                  Row(
+                    children: [
+                      /// 🛒 CART BUTTON
+                      IconButton(
+                        icon: const Icon(Icons.shopping_cart, color: Colors.white),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const CartPage(),
+                            ),
+                          );
+                        },
+                      ),
+
+                      /// 👤 PROFILE BUTTON
+                      IconButton(
+                        icon: const Icon(Icons.person, color: Colors.white),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ProfilePage(),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  )
+                ],
               ),
             ),
 
-            const SizedBox(height: 30),
+            /// 🔍 SEARCH BAR
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: "Search shops...",
+                  prefixIcon: const Icon(Icons.search),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    searchQuery = value.toLowerCase();
+                  });
+                },
+              ),
+            ),
 
             /// 🔥 CATEGORIES
             const Padding(
@@ -83,13 +145,12 @@ class CustomerDashboard extends StatelessWidget {
 
             const SizedBox(height: 15),
 
-            /// 🔥 FIRESTORE SHOPS
+            /// 🔥 FIRESTORE SHOPS WITH SEARCH
             StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('shops')
                   .orderBy('createdAt', descending: true)
                   .snapshots(),
-
               builder: (context, snapshot) {
 
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -105,7 +166,15 @@ class CustomerDashboard extends StatelessWidget {
                   );
                 }
 
-                final shops = snapshot.data!.docs;
+                final shops = snapshot.data!.docs.where((shop) {
+                  final data = shop.data() as Map<String, dynamic>;
+                  final name = (data['shopName'] ?? "").toLowerCase();
+                  return name.contains(searchQuery);
+                }).toList();
+
+                if (shops.isEmpty) {
+                  return const Center(child: Text("No matching shops"));
+                }
 
                 return Column(
                   children: shops.map((shop) {
@@ -132,7 +201,7 @@ class CustomerDashboard extends StatelessWidget {
     );
   }
 
-  /// 🔥 SHOP CARD (FIXED)
+  /// 🔥 SHOP CARD
   Widget shopCard(
     BuildContext context,
     String name,
@@ -140,7 +209,6 @@ class CustomerDashboard extends StatelessWidget {
     String banner,
     String category,
   ) {
-
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -155,11 +223,9 @@ class CustomerDashboard extends StatelessWidget {
           ),
         );
       },
-
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         padding: const EdgeInsets.all(16),
-
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -170,16 +236,13 @@ class CustomerDashboard extends StatelessWidget {
             ),
           ],
         ),
-
         child: Row(
           children: [
 
-            /// ✅ FIXED: NETWORK IMAGE (NOT FILE)
             CircleAvatar(
               radius: 28,
               backgroundColor: Colors.grey.shade200,
-              backgroundImage:
-                  logo.isNotEmpty ? NetworkImage(logo) : null,
+              backgroundImage: logo.isNotEmpty ? NetworkImage(logo) : null,
               child: logo.isEmpty
                   ? const Icon(Icons.store, color: Color(0xFF6A0F1F))
                   : null,
@@ -191,7 +254,6 @@ class CustomerDashboard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-
                   Text(
                     name,
                     style: const TextStyle(
@@ -199,9 +261,7 @@ class CustomerDashboard extends StatelessWidget {
                       fontSize: 16,
                     ),
                   ),
-
                   const SizedBox(height: 4),
-
                   Text(
                     category,
                     style: const TextStyle(
@@ -253,6 +313,163 @@ class CustomerDashboard extends StatelessWidget {
           style: const TextStyle(color: Colors.white),
         ),
       ),
+    );
+  }
+}
+
+/// 🛒 REAL CART PAGE (FIRESTORE CONNECTED)
+class CartPage extends StatelessWidget {
+  const CartPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      return const Scaffold(
+        body: Center(child: Text("User not logged in")),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(title: const Text("My Cart")),
+
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('cart')
+            .snapshots(),
+
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(child: Text("Cart is empty"));
+          }
+
+          final items = snapshot.data!.docs;
+
+          double total = 0;
+
+          return Column(
+            children: [
+
+              /// 🛒 ITEMS LIST
+              Expanded(
+                child: ListView(
+                  children: items.map((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+
+                    final price = (data['price'] ?? 0).toDouble();
+                    final quantity = data['quantity'] ?? 1;
+
+                    total += price * quantity;
+
+                    return ListTile(
+                      leading: Image.network(
+                        data['image'] ?? "",
+                        width: 50,
+                        errorBuilder: (_, __, ___) =>
+                            const Icon(Icons.image),
+                      ),
+                      title: Text(data['name'] ?? ""),
+                      subtitle: Text("₹$price x $quantity"),
+
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+
+                          /// ➖ DECREASE
+                          IconButton(
+                            icon: const Icon(Icons.remove),
+                            onPressed: () async {
+                              if (quantity > 1) {
+                                await doc.reference.update({
+                                  'quantity': quantity - 1,
+                                });
+                              } else {
+                                await doc.reference.delete();
+                              }
+                            },
+                          ),
+
+                          /// ➕ INCREASE
+                          IconButton(
+                            icon: const Icon(Icons.add),
+                            onPressed: () async {
+                              await doc.reference.update({
+                                'quantity': quantity + 1,
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+
+              /// 💰 TOTAL + CHECKOUT
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      blurRadius: 5,
+                      color: Colors.black12,
+                    )
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      "Total: ₹${total.toStringAsFixed(2)}",
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Checkout coming soon"),
+                            ),
+                          );
+                        },
+                        child: const Text("Checkout"),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+
+/// 👤 PROFILE PAGE
+class ProfilePage extends StatelessWidget {
+  const ProfilePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Profile")),
+      body: const Center(child: Text("User Profile")),
     );
   }
 }
