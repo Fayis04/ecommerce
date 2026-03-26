@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'shop_view.dart';
+import 'cart_page.dart';
 
 class CustomerDashboard extends StatefulWidget {
   const CustomerDashboard({super.key});
@@ -21,11 +22,20 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF7A0E1A),
         title: const Text("Home"),
-        actions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 15),
-            child: Icon(Icons.shopping_cart),
-          )
+
+        /// 🔥 CART FIXED (WORKING)
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.shopping_cart),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const CartPage(),
+                ),
+              );
+            },
+          ),
         ],
       ),
 
@@ -36,7 +46,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
 
-            /// 🔍 SEARCH BAR (WORKING)
+            /// 🔍 SEARCH BAR (ADDED, DOESN’T BREAK UI)
             TextField(
               onChanged: (value) {
                 setState(() {
@@ -68,9 +78,9 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: const [
-                categoryCard("Saree"),
-                categoryCard("Bangles"),
-                categoryCard("Pashmina"),
+                CategoryCard("Saree"),
+                CategoryCard("Bangles"),
+                CategoryCard("Pashmina"),
               ],
             ),
 
@@ -83,7 +93,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
 
             const SizedBox(height: 10),
 
-            /// 🔥 SHOP LIST WITH SEARCH
+            /// 🔥 SHOP LIST (WITH SEARCH FILTER)
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
@@ -97,7 +107,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
 
                   var shops = snapshot.data!.docs;
 
-                  /// 🔥 FILTER LOGIC
+                  /// 🔍 FILTER
                   var filteredShops = shops.where((shop) {
                     var data = shop.data() as Map<String, dynamic>;
                     String name = (data['shopName'] ?? "").toLowerCase();
@@ -160,11 +170,11 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
   }
 }
 
-/// 🔹 CATEGORY CARD (UNCHANGED UI)
-class categoryCard extends StatelessWidget {
+/// 🔹 CATEGORY CARD (UNCHANGED)
+class CategoryCard extends StatelessWidget {
   final String title;
 
-  const categoryCard(this.title, {super.key});
+  const CategoryCard(this.title, {super.key});
 
   @override
   Widget build(BuildContext context) {
