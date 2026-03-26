@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'product_details.dart';
+import 'product_model.dart';
 
 class ShopDetails extends StatelessWidget {
   final String shopName;
@@ -12,11 +15,12 @@ class ShopDetails extends StatelessWidget {
         backgroundColor: const Color(0xFF1B5E20),
         title: Text(shopName),
       ),
+
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
 
-          // Banner
+          /// 🔥 BANNER
           Container(
             height: 180,
             width: double.infinity,
@@ -43,19 +47,61 @@ class ShopDetails extends StatelessWidget {
 
           const SizedBox(height: 15),
 
-          // Sample Products
+          /// 🔥 FIREBASE PRODUCTS
           Expanded(
-            child: GridView.count(
-              crossAxisCount: 2,
-              padding: const EdgeInsets.all(20),
-              crossAxisSpacing: 15,
-              mainAxisSpacing: 15,
-              children: const [
-                ProductCard(name: "Saree", price: "₹1500"),
-                ProductCard(name: "Lehanga", price: "₹2500"),
-                ProductCard(name: "Jutti", price: "₹800"),
-                ProductCard(name: "Sherwani", price: "₹4000"),
-              ],
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('products')
+                  .where('shopName', isEqualTo: shopName)
+                  .snapshots(),
+              builder: (context, snapshot) {
+
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                var products = snapshot.data!.docs;
+
+                if (products.isEmpty) {
+                  return const Center(
+                    child: Text("No products available"),
+                  );
+                }
+
+                return GridView.builder(
+                  padding: const EdgeInsets.all(20),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 15,
+                    mainAxisSpacing: 15,
+                    childAspectRatio: 0.8,
+                  ),
+                  itemCount: products.length,
+                  itemBuilder: (context, index) {
+
+                    var doc = products[index];
+                    var data = doc.data() as Map<String, dynamic>;
+
+                    Product product = Product.fromMap(data, doc.id);
+
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ProductDetails(product: product),
+                          ),
+                        );
+                      },
+                      child: ProductCard(
+                        name: product.name,
+                        price: "₹ ${product.price}",
+                        image: product.image,
+                      ),
+                    );
+                  },
+                );
+              },
             ),
           ),
         ],
@@ -67,8 +113,22 @@ class ShopDetails extends StatelessWidget {
 class ProductCard extends StatelessWidget {
   final String name;
   final String price;
+  final String image;
 
-  const ProductCard({super.key, required this.name, required this.price});
+  const ProductCard({
+    super.key,
+    required this.name,
+    required this.price,
+    required this.image,
+  });
+
+  ImageProvider getImage() {
+    if (image.startsWith('http')) {
+      return NetworkImage(image);
+    } else {
+      return const AssetImage("assets/placeholder.png");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -83,17 +143,35 @@ class ProductCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.shopping_bag, size: 40, color: Colors.green),
-            const SizedBox(height: 10),
-            Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-            Text(price),
-          ],
-        ),
+
+      child: Column(
+        children: [
+
+          /// 🔥 IMAGE
+          Expanded(
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+              child: Image(
+                image: getImage(),
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.all(10),
+            child: Column(
+              children: [
+                Text(
+                  name,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(price),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

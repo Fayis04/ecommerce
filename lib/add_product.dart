@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
-// 👉 IMPORT CLOUDINARY (same as your shop upload)
 import 'package:cloudinary_public/cloudinary_public.dart';
 
 class AddProduct extends StatefulWidget {
@@ -23,15 +21,14 @@ class _AddProductState extends State<AddProduct> {
   File? _image;
   final ImagePicker _picker = ImagePicker();
 
-  final TextEditingController nameController = TextEditingController();
-  final TextEditingController priceController = TextEditingController();
-  final TextEditingController quantityController = TextEditingController();
-  final TextEditingController detailsController = TextEditingController();
-  final TextEditingController categoryController = TextEditingController();
+  final nameController = TextEditingController();
+  final priceController = TextEditingController();
+  final quantityController = TextEditingController();
+  final detailsController = TextEditingController();
+  final categoryController = TextEditingController();
 
   bool isLoading = false;
 
-  // 👉 INIT CLOUDINARY (use SAME config you used before)
   final cloudinary = CloudinaryPublic('dnkjruqx3', 'vendura_upload');
 
   Future<void> _pickImage() async {
@@ -45,7 +42,6 @@ class _AddProductState extends State<AddProduct> {
     }
   }
 
-  /// 🔥 UPLOAD IMAGE TO CLOUDINARY
   Future<String> uploadImage(File imageFile) async {
     final response = await cloudinary.uploadFile(
       CloudinaryFile.fromFile(
@@ -53,55 +49,77 @@ class _AddProductState extends State<AddProduct> {
         resourceType: CloudinaryResourceType.Image,
       ),
     );
-
-    return response.secureUrl; // ✅ IMPORTANT
+    return response.secureUrl;
   }
 
-  /// ✅ ADD PRODUCT TO FIRESTORE
   void addProduct() async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      showMsg("User not logged in");
+      return;
+    }
+
     if (nameController.text.isEmpty ||
         priceController.text.isEmpty ||
         categoryController.text.isEmpty ||
         _image == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill required fields")),
-      );
+      showMsg("Please fill all required fields");
       return;
     }
 
+    double price = double.tryParse(priceController.text) ?? 0;
+    int quantity = int.tryParse(quantityController.text) ?? 0;
+
+    if (price <= 0) {
+      showMsg("Enter valid price");
+      return;
+    }
+
+    setState(() => isLoading = true);
+
     try {
-      setState(() => isLoading = true);
-
-      final user = FirebaseAuth.instance.currentUser;
-
-      // 🔥 STEP 1: upload image
+      /// 🔥 Upload image
       String imageUrl = await uploadImage(_image!);
 
-      // 🔥 STEP 2: save URL (NOT path)
+      /// 🔥 Save product
       await FirebaseFirestore.instance.collection('products').add({
-        "name": nameController.text,
-        "price": double.parse(priceController.text),
-        "category": categoryController.text,
-        "description": detailsController.text,
-        "image": imageUrl, // ✅ FIXED
+        "name": nameController.text.trim(),
+        "price": price,
+        "category": categoryController.text.trim(),
+        "description": detailsController.text.trim(),
+        "image": imageUrl,
         "shopName": widget.shopName,
-        "ownerId": user!.uid,
-        "inStock": quantityController.text == "0" ? false : true,
+        "sellerId": user.uid, // ✅ IMPORTANT FIX
+        "inStock": quantity > 0,
+        "quantity": quantity,
         "createdAt": Timestamp.now(),
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Product Added")),
-      );
+      showMsg("Product Added Successfully");
 
       Navigator.pop(context);
+
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
-    } finally {
-      setState(() => isLoading = false);
+      showMsg("Error: $e");
     }
+
+    setState(() => isLoading = false);
+  }
+
+  void showMsg(String msg) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    priceController.dispose();
+    quantityController.dispose();
+    detailsController.dispose();
+    categoryController.dispose();
+    super.dispose();
   }
 
   @override
@@ -112,6 +130,7 @@ class _AddProductState extends State<AddProduct> {
       body: SingleChildScrollView(
         child: Column(
           children: [
+
             /// HEADER
             Container(
               width: double.infinity,
@@ -132,7 +151,7 @@ class _AddProductState extends State<AddProduct> {
               ),
             ),
 
-            const SizedBox(height: 30),
+            const SizedBox(height: 25),
 
             /// IMAGE PICKER
             GestureDetector(
@@ -151,7 +170,7 @@ class _AddProductState extends State<AddProduct> {
                           children: [
                             Icon(Icons.add_a_photo, size: 40),
                             SizedBox(height: 10),
-                            Text("Tap to upload product image"),
+                            Text("Upload product image"),
                           ],
                         ),
                       )
@@ -166,29 +185,30 @@ class _AddProductState extends State<AddProduct> {
               ),
             ),
 
-            const SizedBox(height: 30),
+            const SizedBox(height: 25),
 
             buildField("Product Name", nameController),
-            const SizedBox(height: 20),
+            const SizedBox(height: 15),
 
             buildField("Price", priceController,
                 type: TextInputType.number),
-            const SizedBox(height: 20),
+            const SizedBox(height: 15),
 
             buildField("Quantity", quantityController,
                 type: TextInputType.number),
-            const SizedBox(height: 20),
+            const SizedBox(height: 15),
 
             buildField("Product Details", detailsController),
-            const SizedBox(height: 20),
+            const SizedBox(height: 15),
 
             buildField("Category", categoryController),
-            const SizedBox(height: 30),
+            const SizedBox(height: 25),
 
-            /// ADD BUTTON
+            /// BUTTON
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: ElevatedButton(
+                onPressed: isLoading ? null : addProduct,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF6A0F1F),
                   minimumSize: const Size(double.infinity, 55),
@@ -196,7 +216,6 @@ class _AddProductState extends State<AddProduct> {
                     borderRadius: BorderRadius.circular(15),
                   ),
                 ),
-                onPressed: isLoading ? null : addProduct,
                 child: isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Text(

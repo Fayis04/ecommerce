@@ -23,79 +23,80 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
 
   final ImagePicker picker = ImagePicker();
 
-  /// 🔥 Cloudinary config
+  bool isLoading = false;
+
   final String cloudName = "dnkjruqx3";
   final String uploadPreset = "vendura_upload";
 
-  /// PICK BANNER
   Future pickBanner() async {
     final picked = await picker.pickImage(source: ImageSource.gallery);
     if (picked != null) {
-      setState(() {
-        bannerImage = File(picked.path);
-      });
+      setState(() => bannerImage = File(picked.path));
     }
   }
 
-  /// PICK LOGO
   Future pickLogo() async {
     final picked = await picker.pickImage(source: ImageSource.gallery);
     if (picked != null) {
-      setState(() {
-        logoImage = File(picked.path);
-      });
+      setState(() => logoImage = File(picked.path));
     }
   }
 
-  /// 🔥 UPLOAD IMAGE TO CLOUDINARY
   Future<String?> uploadImage(File imageFile) async {
+    try {
+      final url = Uri.parse(
+          "https://api.cloudinary.com/v1_1/$cloudName/image/upload");
 
-    final url = Uri.parse(
-        "https://api.cloudinary.com/v1_1/$cloudName/image/upload");
+      var request = http.MultipartRequest("POST", url);
+      request.fields['upload_preset'] = uploadPreset;
 
-    var request = http.MultipartRequest("POST", url);
+      request.files.add(
+        await http.MultipartFile.fromPath('file', imageFile.path),
+      );
 
-    request.fields['upload_preset'] = uploadPreset;
+      var response = await request.send();
 
-    request.files.add(
-      await http.MultipartFile.fromPath('file', imageFile.path),
-    );
-
-    var response = await request.send();
-
-    if (response.statusCode == 200) {
-      final resData = await response.stream.bytesToString();
-      final data = jsonDecode(resData);
-      return data['secure_url'];
-    } else {
-      return null;
+      if (response.statusCode == 200) {
+        final resData = await response.stream.bytesToString();
+        final data = jsonDecode(resData);
+        return data['secure_url'];
+      }
+    } catch (e) {
+      print("Upload error: $e");
     }
+    return null;
   }
 
-  /// ✅ CREATE SHOP
   Future<void> createShop() async {
+
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null ||
+        shopNameController.text.isEmpty ||
+        categoryController.text.isEmpty ||
+        bannerImage == null ||
+        logoImage == null) {
+
+      showMsg("Please fill all fields");
+      return;
+    }
+
+    setState(() => isLoading = true);
+
     try {
-      final user = FirebaseAuth.instance.currentUser;
 
-      if (user == null ||
-          shopNameController.text.isEmpty ||
-          categoryController.text.isEmpty ||
-          bannerImage == null ||
-          logoImage == null) {
+      /// 🔥 Upload images
+      String? bannerUrl = await uploadImage(bannerImage!);
+      String? logoUrl = await uploadImage(logoImage!);
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Please fill all fields")),
-        );
+      if (bannerUrl == null || logoUrl == null) {
+        showMsg("Image upload failed");
         return;
       }
 
-      /// Upload images
-      String bannerUrl = await uploadImage(bannerImage!) ?? "";
-      String logoUrl = await uploadImage(logoImage!) ?? "";
-
-      /// Save to Firestore
+      /// 🔥 Save shop
       await FirebaseFirestore.instance.collection("shops").add({
-        "ownerId": FirebaseAuth.instance.currentUser!.uid,
+        "ownerId": user.uid,
         "shopName": shopNameController.text.trim(),
         "category": categoryController.text.trim(),
         "banner": bannerUrl,
@@ -103,17 +104,27 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
         "createdAt": Timestamp.now(),
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Shop Created Successfully")),
-      );
+      showMsg("Shop Created Successfully");
 
       Navigator.pop(context);
 
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
+      showMsg("Error: $e");
     }
+
+    setState(() => isLoading = false);
+  }
+
+  void showMsg(String msg) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  @override
+  void dispose() {
+    shopNameController.dispose();
+    categoryController.dispose();
+    super.dispose();
   }
 
   @override
@@ -149,9 +160,7 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
                       : null,
                 ),
                 child: bannerImage == null
-                    ? const Center(
-                        child: Text("Tap to add shop banner"),
-                      )
+                    ? const Center(child: Text("Tap to add shop banner"))
                     : null,
               ),
             ),
@@ -174,37 +183,13 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
 
             const SizedBox(height: 30),
 
-            /// SHOP NAME
-            TextField(
-              controller: shopNameController,
-              decoration: InputDecoration(
-                labelText: "Shop Name",
-                labelStyle: const TextStyle(color: Color(0xFF6A0F1F)),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
+            /// NAME
+            buildField("Shop Name", shopNameController),
 
             const SizedBox(height: 20),
 
             /// CATEGORY
-            TextField(
-              controller: categoryController,
-              decoration: InputDecoration(
-                labelText: "Category",
-                labelStyle: const TextStyle(color: Color(0xFF6A0F1F)),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
+            buildField("Category", categoryController),
 
             const SizedBox(height: 30),
 
@@ -212,6 +197,7 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
+                onPressed: isLoading ? null : createShop,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF6A0F1F),
                   padding: const EdgeInsets.symmetric(vertical: 15),
@@ -219,17 +205,34 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                onPressed: createShop,
-                child: const Text(
-                  "Create Shop",
-                  style: TextStyle(
-                    color: Color(0xFFD4AF37),
-                    fontSize: 16,
-                  ),
-                ),
+                child: isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
+                        "Create Shop",
+                        style: TextStyle(
+                          color: Color(0xFFD4AF37),
+                          fontSize: 16,
+                        ),
+                      ),
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget buildField(String label, TextEditingController controller) {
+    return TextField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: Color(0xFF6A0F1F)),
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
         ),
       ),
     );

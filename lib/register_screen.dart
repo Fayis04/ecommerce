@@ -19,54 +19,73 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool isPasswordHidden = true;
 
   void registerUser() async {
-    if (emailController.text.isEmpty ||
-        passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill all fields")),
-      );
+    String email = emailController.text.trim();
+    String password = passwordController.text.trim();
+
+    /// 🔐 VALIDATION (NEW)
+    if (email.isEmpty || password.isEmpty) {
+      showMsg("Please fill all fields");
       return;
     }
 
-    setState(() {
-      isLoading = true;
-    });
+    if (!email.contains('@')) {
+      showMsg("Enter a valid email");
+      return;
+    }
+
+    if (password.length < 6) {
+      showMsg("Password must be at least 6 characters");
+      return;
+    }
+
+    setState(() => isLoading = true);
 
     try {
       UserCredential user = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(
-        email: emailController.text.trim(),
-        password: passwordController.text.trim(),
+        email: email,
+        password: password,
       );
 
       await FirebaseFirestore.instance
           .collection('users')
           .doc(user.user!.uid)
           .set({
-        'email': emailController.text.trim(),
+        'email': email,
         'role': role,
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Registration Successful")),
-      );
+      showMsg("Registration Successful");
 
       await FirebaseAuth.instance.signOut();
 
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => const LoginScreen(),
+          builder: (_) => const LoginScreen(),
         ),
       );
+
+    } on FirebaseAuthException catch (e) {
+      showMsg(e.message ?? "Something went wrong");
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: ${e.toString()}")),
-      );
+      showMsg("Error occurred");
     }
 
-    setState(() {
-      isLoading = false;
-    });
+    setState(() => isLoading = false);
+  }
+
+  /// 🔥 CLEAN SNACKBAR METHOD (NEW)
+  void showMsg(String msg) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
   }
 
   @override
@@ -86,19 +105,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
             end: Alignment.bottomRight,
           ),
         ),
+
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
               child: Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 25),
+
                 child: Card(
                   elevation: 12,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
+
                   child: Padding(
                     padding: const EdgeInsets.all(25),
+
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -116,6 +139,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         /// EMAIL
                         TextField(
                           controller: emailController,
+                          keyboardType: TextInputType.emailAddress, // ✅ NEW
                           decoration: InputDecoration(
                             labelText: "Email",
                             prefixIcon:
@@ -123,16 +147,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             border: OutlineInputBorder(
                               borderRadius:
                                   BorderRadius.circular(15),
-                            ),
-                            focusedBorder:
-                                OutlineInputBorder(
-                              borderRadius:
-                                  BorderRadius.circular(15),
-                              borderSide:
-                                  const BorderSide(
-                                color: Colors.deepPurple,
-                                width: 2,
-                              ),
                             ),
                           ),
                         ),
@@ -164,22 +178,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               borderRadius:
                                   BorderRadius.circular(15),
                             ),
-                            focusedBorder:
-                                OutlineInputBorder(
-                              borderRadius:
-                                  BorderRadius.circular(15),
-                              borderSide:
-                                  const BorderSide(
-                                color: Colors.deepPurple,
-                                width: 2,
-                              ),
-                            ),
                           ),
                         ),
 
                         const SizedBox(height: 20),
 
-                        /// ROLE DROPDOWN
+                        /// ROLE
                         DropdownButtonFormField<String>(
                           initialValue: role,
                           decoration: InputDecoration(
@@ -229,8 +233,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                             ),
                             child: isLoading
-                                ? const CircularProgressIndicator(
-                                    color: Colors.white,
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child:
+                                        CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
                                   )
                                 : const Text(
                                     "Register",
@@ -248,12 +258,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                         TextButton(
                           onPressed: () {
-                              Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const LoginScreen(),
-        ),
-      );
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    const LoginScreen(),
+                              ),
+                            );
                           },
                           child: const Text(
                             "Already have an account? Login",

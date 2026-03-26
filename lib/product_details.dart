@@ -8,6 +8,15 @@ class ProductDetails extends StatelessWidget {
 
   const ProductDetails({super.key, required this.product});
 
+  /// 🔥 SAFE IMAGE HANDLER
+  ImageProvider getImage(String path) {
+    if (path.startsWith("http")) {
+      return NetworkImage(path);
+    } else {
+      return const AssetImage("assets/placeholder.png");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -22,16 +31,14 @@ class ProductDetails extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+
             /// 🔥 PRODUCT IMAGE
             Container(
               height: 300,
               width: double.infinity,
               decoration: BoxDecoration(
                 image: DecorationImage(
-                  image: product.image.startsWith("http")
-                      ? NetworkImage(product.image)
-                      : const AssetImage("assets/placeholder.png")
-                            as ImageProvider,
+                  image: getImage(product.image), // ✅ FIXED
                   fit: BoxFit.cover,
                 ),
               ),
@@ -41,9 +48,11 @@ class ProductDetails extends StatelessWidget {
 
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
+
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+
                   /// 🔥 NAME
                   Text(
                     product.name,
@@ -83,7 +92,10 @@ class ProductDetails extends StatelessWidget {
                   /// 🔥 DESCRIPTION
                   Text(
                     product.description,
-                    style: const TextStyle(fontSize: 14, color: Colors.black54),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.black54,
+                    ),
                   ),
 
                   const SizedBox(height: 30),
@@ -100,10 +112,17 @@ class ProductDetails extends StatelessWidget {
                         ),
                       ),
                       onPressed: () {
-                        cartList.add(product);
+
+                        /// ✅ PREVENT DUPLICATES
+                        if (!cartList.contains(product)) {
+                          cartList.add(product);
+                        }
 
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Added to cart")),
+                          const SnackBar(
+                            content: Text("Added to cart"),
+                            duration: Duration(seconds: 1),
+                          ),
                         );
                       },
                       child: const Text(
@@ -119,7 +138,7 @@ class ProductDetails extends StatelessWidget {
 
                   const SizedBox(height: 15),
 
-                  /// 🔥 BUY NOW (FIXED)
+                  /// 🔥 BUY NOW
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton(
@@ -134,14 +153,16 @@ class ProductDetails extends StatelessWidget {
                         ),
                       ),
                       onPressed: () {
-                        /// optional: instant checkout
+
+                        /// 🔥 INSTANT CHECKOUT
                         cartList.clear();
                         cartList.add(product);
 
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => PaymentPage(total: product.price),
+                            builder: (_) =>
+                                PaymentPage(total: product.price),
                           ),
                         );
                       },

@@ -13,17 +13,67 @@ class _DummyGPayPageState extends State<DummyGPayPage> {
 
   final upiController = TextEditingController();
 
+  /// 🔥 VALIDATE + PROCESS PAYMENT
+  void validateAndPay() async {
+    String upi = upiController.text.trim();
+
+    if (upi.isEmpty || !upi.contains('@')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Enter valid UPI ID")),
+      );
+      return;
+    }
+
+    /// 🔥 SHOW PROCESSING DIALOG
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: Card(
+          child: Padding(
+            padding: EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 15),
+                Text("Processing Payment..."),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    /// ⏳ WAIT (simulate payment)
+    await Future.delayed(const Duration(seconds: 2));
+
+    Navigator.pop(context); // close dialog
+
+    /// ✅ SUCCESS CALLBACK
+    widget.onSuccess();
+  }
+
+  @override
+  void dispose() {
+    upiController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       appBar: AppBar(title: const Text("GPay Payment")),
 
       body: Padding(
         padding: const EdgeInsets.all(20),
+
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
 
-            /// GPay UI HEADER
+            /// 🔥 HEADER
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -46,10 +96,13 @@ class _DummyGPayPageState extends State<DummyGPayPage> {
 
             const SizedBox(height: 30),
 
+            /// 💳 UPI INPUT
             TextField(
               controller: upiController,
+              keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
                 hintText: "Enter UPI ID (example@upi)",
+                prefixIcon: const Icon(Icons.account_balance),
                 filled: true,
                 fillColor: Colors.grey.shade200,
                 border: OutlineInputBorder(
@@ -61,40 +114,45 @@ class _DummyGPayPageState extends State<DummyGPayPage> {
 
             const SizedBox(height: 20),
 
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                "Saved UPI IDs",
-                style: TextStyle(fontWeight: FontWeight.bold),
+            /// 📌 SAVED UPI
+            const Text(
+              "Saved UPI IDs",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
               ),
             ),
 
             const SizedBox(height: 10),
 
-            ListTile(
-              leading: const Icon(Icons.account_circle),
-              title: const Text("user@upi"),
-              onTap: () {
-                setState(() {
-                  upiController.text = "user@upi";
-                });
-              },
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.account_circle),
+                title: const Text("user@upi"),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                onTap: () {
+                  setState(() {
+                    upiController.text = "user@upi";
+                  });
+                },
+              ),
             ),
 
             const Spacer(),
 
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
-                minimumSize: const Size(double.infinity, 50),
-              ),
-              onPressed: () {
-                /// DUMMY SUCCESS
-                widget.onSuccess();
-              },
-              child: const Text(
-                "Pay with GPay",
-                style: TextStyle(color: Colors.white),
+            /// 💰 PAY BUTTON
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: validateAndPay,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black,
+                  minimumSize: const Size(double.infinity, 50),
+                ),
+                child: const Text(
+                  "Pay with GPay",
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             )
           ],

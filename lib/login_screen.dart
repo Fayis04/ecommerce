@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'customer_dashboard.dart';
 import 'seller_dashboard.dart';
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -11,30 +12,43 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
   bool isLoading = false;
   bool isPasswordHidden = true;
 
+  /// 🔥 SNACKBAR
+  void showMsg(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(msg)));
+  }
+
   void loginUser() async {
-    if (emailController.text.isEmpty ||
-        passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill all fields")),
-      );
+
+    String email = emailController.text.trim();
+    String password = passwordController.text.trim();
+
+    /// 🔐 VALIDATION
+    if (email.isEmpty || password.isEmpty) {
+      showMsg("Please fill all fields");
       return;
     }
 
-    setState(() {
-      isLoading = true;
-    });
+    if (!email.contains('@')) {
+      showMsg("Enter valid email");
+      return;
+    }
+
+    setState(() => isLoading = true);
 
     try {
       UserCredential userCredential =
           await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: emailController.text.trim(),
-        password: passwordController.text.trim(),
+        email: email,
+        password: password,
       );
 
       String uid = userCredential.user!.uid;
@@ -44,36 +58,55 @@ class _LoginScreenState extends State<LoginScreen> {
           .doc(uid)
           .get();
 
-      String role = userDoc['role'];
+      if (!userDoc.exists) {
+        showMsg("User data not found");
+        setState(() => isLoading = false);
+        return;
+      }
+
+      /// 🔥 SAFE ROLE
+      String role = (userDoc.data() as Map<String, dynamic>)['role'] ?? 'customer';
+
+      /// 🔥 NAVIGATION
+      if (!mounted) return;
 
       if (role == 'seller') {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => const  SellerHome(),
+            builder: (_) => SellerHome(),
           ),
         );
       } else {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => const CustomerDashboard(),
+            builder: (_) => CustomerDashboard(),
           ),
         );
       }
+
+    } on FirebaseAuthException catch (e) {
+      showMsg(e.message ?? "Login failed");
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Login Failed: ${e.toString()}")),
-      );
+      showMsg("Something went wrong");
     }
 
-    setState(() {
-      isLoading = false;
-    });
+    if (mounted) {
+      setState(() => isLoading = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       backgroundColor: Colors.white,
 
@@ -81,13 +114,13 @@ class _LoginScreenState extends State<LoginScreen> {
         child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 30),
+
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
 
                 const SizedBox(height: 40),
 
-                /// TITLE
                 const Text(
                   "Welcome Back 👋",
                   style: TextStyle(
@@ -108,28 +141,22 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 40),
 
-                /// EMAIL FIELD
+                /// EMAIL
                 TextField(
                   controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
                     labelText: "Email",
                     prefixIcon: const Icon(Icons.email_outlined),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(15),
                     ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(15),
-                      borderSide: const BorderSide(
-                        color: Color(0xFF6A0F1F),
-                        width: 2,
-                      ),
-                    ),
                   ),
                 ),
 
                 const SizedBox(height: 20),
 
-                /// PASSWORD FIELD
+                /// PASSWORD
                 TextField(
                   controller: passwordController,
                   obscureText: isPasswordHidden,
@@ -151,13 +178,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(15),
                     ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(15),
-                      borderSide: const BorderSide(
-                        color: Color(0xFF6A0F1F),
-                        width: 2,
-                      ),
-                    ),
                   ),
                 ),
 
@@ -169,16 +189,20 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: ElevatedButton(
                     onPressed: isLoading ? null : loginUser,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF6A0F1F),
-                      padding:
-                          const EdgeInsets.symmetric(vertical: 16),
+                      backgroundColor: const Color(0xFF6A0F1F),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(15),
                       ),
                     ),
                     child: isLoading
-                        ? const CircularProgressIndicator(
-                            color: Colors.white,
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
                           )
                         : const Text(
                             "Login",
@@ -193,7 +217,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 20),
 
-                /// BACK TO HOME
+                /// BACK
                 Center(
                   child: TextButton(
                     onPressed: () {

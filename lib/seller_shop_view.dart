@@ -11,6 +11,17 @@ class SellerShopView extends StatefulWidget {
 }
 
 class _SellerShopViewState extends State<SellerShopView> {
+
+  String get userId => FirebaseAuth.instance.currentUser?.uid ?? '';
+
+  ImageProvider getImage(String path) {
+    if (path.isNotEmpty && path.startsWith('http')) {
+      return NetworkImage(path);
+    } else {
+      return const AssetImage('assets/placeholder.png');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -24,10 +35,7 @@ class _SellerShopViewState extends State<SellerShopView> {
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('shops')
-            .where(
-              'ownerId',
-              isEqualTo: FirebaseAuth.instance.currentUser!.uid,
-            )
+            .where('ownerId', isEqualTo: userId)
             .snapshots(),
         builder: (context, snapshot) {
 
@@ -64,9 +72,7 @@ class _SellerShopViewState extends State<SellerShopView> {
                     width: double.infinity,
                     decoration: BoxDecoration(
                       image: DecorationImage(
-                        image: banner.isNotEmpty
-                            ? NetworkImage(banner)
-                            : const AssetImage('assets/placeholder.png') as ImageProvider,
+                        image: getImage(banner),
                         fit: BoxFit.cover,
                       ),
                     ),
@@ -75,9 +81,7 @@ class _SellerShopViewState extends State<SellerShopView> {
                   /// 🔥 SHOP INFO
                   ListTile(
                     leading: CircleAvatar(
-                      backgroundImage: logo.isNotEmpty
-                          ? NetworkImage(logo)
-                          : const AssetImage('assets/placeholder.png'),
+                      backgroundImage: getImage(logo),
                     ),
                     title: Text(
                       shopName,
@@ -86,7 +90,7 @@ class _SellerShopViewState extends State<SellerShopView> {
                     subtitle: Text(category),
                   ),
 
-                  /// 🔥 ADD PRODUCT BUTTON
+                  /// 🔥 ADD PRODUCT
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 15),
                     child: ElevatedButton.icon(
@@ -142,7 +146,7 @@ class _SellerShopViewState extends State<SellerShopView> {
                           var product = products[i];
                           var data = product.data() as Map<String, dynamic>;
 
-                          int qty = data['quantity'] ?? 0;
+                          int qty = (data['quantity'] ?? 0);
                           String image = data['image'] ?? "";
 
                           return Container(
@@ -167,9 +171,7 @@ class _SellerShopViewState extends State<SellerShopView> {
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(8),
                                   child: Image(
-                                    image: image.startsWith('http')
-                                        ? NetworkImage(image)
-                                        : const AssetImage('assets/placeholder.png') as ImageProvider,
+                                    image: getImage(image),
                                     height: 60,
                                     width: 60,
                                     fit: BoxFit.cover,
@@ -184,7 +186,7 @@ class _SellerShopViewState extends State<SellerShopView> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        data['name'] ?? "",
+                                        data['name'] ?? "Product",
                                         style: const TextStyle(
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -218,7 +220,6 @@ class _SellerShopViewState extends State<SellerShopView> {
                                           },
                                         ),
 
-                                        /// QTY
                                         Text(
                                           "$qty",
                                           style: const TextStyle(
@@ -244,7 +245,6 @@ class _SellerShopViewState extends State<SellerShopView> {
                                       ],
                                     ),
 
-                                    /// STOCK TEXT
                                     Text(
                                       qty > 0 ? "In Stock" : "Out of Stock",
                                       style: TextStyle(
